@@ -1561,6 +1561,11 @@ def api_customer_read_notifications():
             n["read"] = True
     return jsonify({"success": True})
 
+# ── Heath Check End Point ───────────────────────────────────────────────────────────────
+@app.route('/health', methods=['GET'])
+def health_check():
+    return {"status": "healthy"}, 200
+
 
 # ── Entry Point ───────────────────────────────────────────────────────────────
 if __name__ == "__main__":
