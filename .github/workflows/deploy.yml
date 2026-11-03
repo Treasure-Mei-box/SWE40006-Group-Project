@@ -1,0 +1,217 @@
+name: CI/CD Pipeline - Build, Test & Deploy
+
+on:
+  push:
+    branches:
+      - main
+  pull_request:
+    branches:
+      - main
+
+env:
+  REGISTRY: ghcr.io
+  IMAGE_NAME: ${{ github.repository }}
+
+jobs:
+  # ---------------------------------------------------------------
+  # CI: lint + unit tests (runs on every push and pull request)
+  # ---------------------------------------------------------------
+  lint-and-test:
+    name: Code Linting and Testing
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.10'
+
+      - name: Install Dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
+
+      - name: Lint Code with Flake8
+        run: |
+          # Hard fail on syntax errors / undefined names
+          flake8 . --count --select=E9,F63,F7,F82 --show-source --statistics
+          # Style report (advisory). Remove --exit-zero to make it block the build.
+          flake8 . --count --exit-zero --max-complexity=10 --max-line-length=127 --statistics
+
+      - name: Run Unit Tests with Pytest
+        run: |
+          # Failing tests stop the pipeline (no "|| true").
+          pytest -v
+
+  # ---------------------------------------------------------------
+  # Build: package the app as a Docker image and push to GHCR
+  # ---------------------------------------------------------------
+  build-and-push-docker:
+    name: Container Packaging & Push
+    needs: lint-and-test
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: write
+
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+
+      - name: Log in to GitHub Container Registry
+        uses: docker/login-action@v3
+        with:
+          registry: ${{ env.REGISTRY }}
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Extract Docker Metadata
+        id: meta
+        uses: docker/metadata-action@v5
+        with:
+          images: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}
+          tags: |
+            type=sha,format=long
+            type=ref,event=branch
+            type=raw,value=latest,enable={{is_default_branch}}
+
+      - name: Build and Push Docker Image
+        uses: docker/build-push-action@v5
+        with:
+          context: .
+          push: ${{ github.ref == 'refs/heads/main' }}
+          tags: ${{ steps.meta.outputs.tags }}
+          labels: ${{ steps.meta.outputs.labels }}
+          # Lets the running app report which commit it was built from (optional /version route)
+          build-args: |
+            GIT_SHA=${{ github.sha }}
+
+  # ---------------------------------------------------------------
+  # CD (1/2): TEST stage -> Azure app "YLS-production" (used as test for now)
+  # If the smoke test fails, the previous image is redeployed automatically.
+  # ---------------------------------------------------------------
+  deploy-to-test:
+    name: "Deploy to Test (Azure App YLS-production)"
+    needs: build-and-push-docker
+    if: github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    environment: test
+
+    steps:
+      # GHCR image names must be lowercase
+      - name: Compute lowercase image name
+        run: echo "IMAGE=${{ env.REGISTRY }}/${GITHUB_REPOSITORY,,}" >> "$GITHUB_ENV"
+
+      - name: Deploy Container to Azure (test stage)
+        id: deploy
+        uses: azure/webapps-deploy@v3
+        with:
+          app-name: 'YLS-production'
+          # Must be the publish profile downloaded from the YLS-production app
+          publish-profile: ${{ secrets.YLS_PROD_PUBLISH_PROFILE }}
+          images: ${{ env.IMAGE }}:sha-${{ github.sha }}
+
+      - name: Smoke Test (test stage)
+        id: smoke
+        env:
+          APP_URL: ${{ steps.deploy.outputs.webapp-url }}
+        run: |
+          echo "Testing: $APP_URL/health"
+          curl --fail --silent --show-error \
+               --retry 30 --retry-delay 10 --retry-connrefused \
+               "$APP_URL/health"
+
+      - name: Record deployed image
+        if: ${{ success() }}
+        run: |
+          echo "### Deployed image (test stage)" >> "$GITHUB_STEP_SUMMARY"
+          echo "${{ env.IMAGE }}:sha-${{ github.sha }}" >> "$GITHUB_STEP_SUMMARY"
+
+      # --- Automatic rollback: runs only when the smoke test failed ---
+      - name: Roll back to previous image
+        id: rollback
+        if: ${{ failure() && steps.smoke.outcome == 'failure' && github.event.before != '0000000000000000000000000000000000000000' }}
+        uses: azure/webapps-deploy@v3
+        with:
+          app-name: 'YLS-production'
+          publish-profile: ${{ secrets.YLS_PROD_PUBLISH_PROFILE }}
+          images: ${{ env.IMAGE }}:sha-${{ github.event.before }}
+
+      - name: Verify rollback and record it
+        if: ${{ always() && steps.rollback.outcome == 'success' }}
+        env:
+          APP_URL: ${{ steps.deploy.outputs.webapp-url }}
+        run: |
+          curl --fail --silent --show-error \
+               --retry 30 --retry-delay 10 --retry-connrefused \
+               "$APP_URL/health"
+          echo "::warning::Smoke test failed. Rolled back to previous image sha-${{ github.event.before }}"
+          echo "### ROLLED BACK (test stage)" >> "$GITHUB_STEP_SUMMARY"
+          echo "Failed commit: ${{ github.sha }}" >> "$GITHUB_STEP_SUMMARY"
+          echo "Restored image: ${{ env.IMAGE }}:sha-${{ github.event.before }}" >> "$GITHUB_STEP_SUMMARY"
+
+  # ---------------------------------------------------------------
+  # CD (2/2): PRODUCTION stage -> Azure app "YLS-testing" (used as production for now)
+  # Only runs if the test stage succeeded. Add "Required reviewers" on the
+  # "production" environment in GitHub for a manual approval gate.
+  # ---------------------------------------------------------------
+  deploy-to-production:
+    name: "Deploy to Production (Azure App YLS-testing)"
+    needs: deploy-to-test
+    if: github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    environment: production
+
+    steps:
+      - name: Compute lowercase image name
+        run: echo "IMAGE=${{ env.REGISTRY }}/${GITHUB_REPOSITORY,,}" >> "$GITHUB_ENV"
+
+      - name: Deploy Container to Azure (production stage)
+        id: deploy
+        uses: azure/webapps-deploy@v3
+        with:
+          app-name: 'YLS-testing'
+          # Must be the publish profile downloaded from the YLS-testing app
+          publish-profile: ${{ secrets.YLS_TESTING_PUBLISH_PROFILE }}
+          images: ${{ env.IMAGE }}:sha-${{ github.sha }}
+
+      - name: Smoke Test (production stage)
+        id: smoke
+        env:
+          APP_URL: ${{ steps.deploy.outputs.webapp-url }}
+        run: |
+          echo "Testing: $APP_URL/health"
+          curl --fail --silent --show-error \
+               --retry 30 --retry-delay 10 --retry-connrefused \
+               "$APP_URL/health"
+
+      - name: Record deployed image
+        if: ${{ success() }}
+        run: |
+          echo "### Deployed image (production stage)" >> "$GITHUB_STEP_SUMMARY"
+          echo "${{ env.IMAGE }}:sha-${{ github.sha }}" >> "$GITHUB_STEP_SUMMARY"
+
+      # --- Automatic rollback: runs only when the smoke test failed ---
+      - name: Roll back to previous image
+        id: rollback
+        if: ${{ failure() && steps.smoke.outcome == 'failure' && github.event.before != '0000000000000000000000000000000000000000' }}
+        uses: azure/webapps-deploy@v3
+        with:
+          app-name: 'YLS-testing'
+          publish-profile: ${{ secrets.YLS_TESTING_PUBLISH_PROFILE }}
+          images: ${{ env.IMAGE }}:sha-${{ github.event.before }}
+
+      - name: Verify rollback and record it
+        if: ${{ always() && steps.rollback.outcome == 'success' }}
+        env:
+          APP_URL: ${{ steps.deploy.outputs.webapp-url }}
+        run: |
+          curl --fail --silent --show-error \
+               --retry 30 --retry-delay 10 --retry-connrefused \
+               "$APP_URL/health"
+          echo "::warning::Smoke test failed. Rolled back to previous image sha-${{ github.event.before }}"
+          echo "### ROLLED BACK (production stage)" >> "$GITHUB_STEP_SUMMARY"
+          echo "Failed commit: ${{ github.sha }}" >> "$GITHUB_STEP_SUMMARY"
+          echo "Restored image: ${{ env.IMAGE }}:sha-${{ github.event.before }}" >> "$GITHUB_STEP_SUMMARY"
