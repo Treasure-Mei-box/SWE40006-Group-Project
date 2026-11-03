@@ -178,7 +178,7 @@ jobs:
         id: deploy
         uses: azure/webapps-deploy@v3
         with:
-          app-name: 'YLS-PRODUCTION'
+          app-name: 'YLS-PROD'
           # Must be the publish profile downloaded from the YLS-testing app
           publish-profile: ${{ secrets.PRODUCTION }}
           images: ${{ env.IMAGE }}:sha-${{ github.sha }}
@@ -205,7 +205,7 @@ jobs:
         if: ${{ failure() && steps.smoke.outcome == 'failure' && github.event.before != '0000000000000000000000000000000000000000' }}
         uses: azure/webapps-deploy@v3
         with:
-          app-name: 'YLS-PRODUCTION'
+          app-name: 'YLS-PROD'
           publish-profile: ${{ secrets.PRODUCTION }}
           images: ${{ env.IMAGE }}:sha-${{ github.event.before }}
 
