@@ -122,9 +122,11 @@ jobs:
         env:
           APP_URL: ${{ steps.deploy.outputs.webapp-url }}
         run: |
+          echo "Waiting 30 seconds for container startup..."
+          sleep 30
           echo "Testing: $APP_URL/health"
           curl --fail --silent --show-error \
-               --retry 30 --retry-delay 10 --retry-connrefused \
+               --retry 15 --retry-delay 5 --retry-connrefused \
                "$APP_URL/health"
 
       - name: Record deployed image
@@ -139,7 +141,7 @@ jobs:
         if: ${{ failure() && steps.smoke.outcome == 'failure' && github.event.before != '0000000000000000000000000000000000000000' }}
         uses: azure/webapps-deploy@v3
         with:
-          app-name: 'YLS'
+          app-name: 'YLS-TEST'
           publish-profile: ${{ secrets.TESTING }}
           images: ${{ env.IMAGE }}:sha-${{ github.event.before }}
 
@@ -203,7 +205,7 @@ jobs:
         if: ${{ failure() && steps.smoke.outcome == 'failure' && github.event.before != '0000000000000000000000000000000000000000' }}
         uses: azure/webapps-deploy@v3
         with:
-          app-name: 'YLS - PRODUCTION'
+          app-name: 'YLS-PRODUCTION'
           publish-profile: ${{ secrets.PRODUCTION }}
           images: ${{ env.IMAGE }}:sha-${{ github.event.before }}
 
