@@ -1,12 +1,12 @@
 FROM python:3.10-slim
 WORKDIR /app
 
-# Copy requirements from the subfolder into the container working directory
-COPY Online-Convenience-Store-System/requirements.txt requirements.txt
+# Copy requirements file from the build context
+COPY requirements.txt requirements.txt
 RUN pip install --no-cache-dir -r requirements.txt
 
-# Copy all project files from the subfolder into the container
-COPY Online-Convenience-Store-System/ .
+# Copy all application files from the build context
+COPY . .
 
 EXPOSE 8000
 
