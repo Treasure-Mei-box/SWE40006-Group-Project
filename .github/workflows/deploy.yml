@@ -78,12 +78,15 @@ jobs:
             type=ref,event=branch
             type=raw,value=latest,enable={{is_default_branch}}
 
-      - name: Build and Push Docker Image
+      - name: Build and push Docker image
         uses: docker/build-push-action@v5
         with:
-          context: .
-          push: ${{ github.ref == 'refs/heads/main' }}
-          tags: ${{ steps.meta.outputs.tags }}
+          context: ./Online-Convenience-Store-System
+          file: ./Online-Convenience-Store-System/Dockerfile
+          push: true
+          tags: |
+            ghcr.io/treasure-mei-box/swe40006-group-project:main
+            ghcr.io/treasure-mei-box/swe40006-group-project:latest
           labels: ${{ steps.meta.outputs.labels }}
           # Lets the running app report which commit it was built from (optional /version route)
           build-args: |
@@ -94,11 +97,11 @@ jobs:
   # If the smoke test fails, the previous image is redeployed automatically.
   # ---------------------------------------------------------------
   deploy-to-test:
-    name: "Deploy to Test (Azure App YLS-production)"
+    name: "Deploy to Test (Azure App YLS)"
     needs: build-and-push-docker
     if: github.ref == 'refs/heads/main'
     runs-on: ubuntu-latest
-    environment: test
+    environment: TEST
 
     steps:
       # GHCR image names must be lowercase
@@ -109,9 +112,9 @@ jobs:
         id: deploy
         uses: azure/webapps-deploy@v3
         with:
-          app-name: 'YLS-production'
+          app-name: 'YLS - TEST'
           # Must be the publish profile downloaded from the YLS-production app
-          publish-profile: ${{ secrets.YLS_PROD_PUBLISH_PROFILE }}
+          publish-profile: ${{ secrets.TESTING }}
           images: ${{ env.IMAGE }}:sha-${{ github.sha }}
 
       - name: Smoke Test (test stage)
@@ -136,8 +139,8 @@ jobs:
         if: ${{ failure() && steps.smoke.outcome == 'failure' && github.event.before != '0000000000000000000000000000000000000000' }}
         uses: azure/webapps-deploy@v3
         with:
-          app-name: 'YLS-production'
-          publish-profile: ${{ secrets.YLS_PROD_PUBLISH_PROFILE }}
+          app-name: 'YLS'
+          publish-profile: ${{ secrets.TESTING }}
           images: ${{ env.IMAGE }}:sha-${{ github.event.before }}
 
       - name: Verify rollback and record it
@@ -159,11 +162,11 @@ jobs:
   # "production" environment in GitHub for a manual approval gate.
   # ---------------------------------------------------------------
   deploy-to-production:
-    name: "Deploy to Production (Azure App YLS-testing)"
+    name: "Deploy to Production (Azure App YLS - PRODUCTION)"
     needs: deploy-to-test
     if: github.ref == 'refs/heads/main'
     runs-on: ubuntu-latest
-    environment: production
+    environment: PRODUCTION
 
     steps:
       - name: Compute lowercase image name
@@ -173,9 +176,9 @@ jobs:
         id: deploy
         uses: azure/webapps-deploy@v3
         with:
-          app-name: 'YLS-testing'
+          app-name: 'YLS - PRODUCTION'
           # Must be the publish profile downloaded from the YLS-testing app
-          publish-profile: ${{ secrets.YLS_TESTING_PUBLISH_PROFILE }}
+          publish-profile: ${{ secrets.PRODUCTION }}
           images: ${{ env.IMAGE }}:sha-${{ github.sha }}
 
       - name: Smoke Test (production stage)
@@ -200,8 +203,8 @@ jobs:
         if: ${{ failure() && steps.smoke.outcome == 'failure' && github.event.before != '0000000000000000000000000000000000000000' }}
         uses: azure/webapps-deploy@v3
         with:
-          app-name: 'YLS-testing'
-          publish-profile: ${{ secrets.YLS_TESTING_PUBLISH_PROFILE }}
+          app-name: 'YLS - PRODUCTION'
+          publish-profile: ${{ secrets.PRODUCTION }}
           images: ${{ env.IMAGE }}:sha-${{ github.event.before }}
 
       - name: Verify rollback and record it
