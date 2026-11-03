@@ -97,7 +97,7 @@ jobs:
   # If the smoke test fails, the previous image is redeployed automatically.
   # ---------------------------------------------------------------
   deploy-to-test:
-    name: "Deploy to Test (Azure App YLS)"
+    name: "Deploy to Test (Azure App YLS - TESTING)"
     needs: build-and-push-docker
     if: github.ref == 'refs/heads/main'
     runs-on: ubuntu-latest
@@ -112,7 +112,7 @@ jobs:
         id: deploy
         uses: azure/webapps-deploy@v3
         with:
-          app-name: 'YLS - TEST'
+          app-name: 'YLS-TEST'
           # Must be the publish profile downloaded from the YLS-production app
           publish-profile: ${{ secrets.TESTING }}
           images: ${{ env.IMAGE }}:sha-${{ github.sha }}
@@ -176,7 +176,7 @@ jobs:
         id: deploy
         uses: azure/webapps-deploy@v3
         with:
-          app-name: 'YLS - PRODUCTION'
+          app-name: 'YLS-PRODUCTION'
           # Must be the publish profile downloaded from the YLS-testing app
           publish-profile: ${{ secrets.PRODUCTION }}
           images: ${{ env.IMAGE }}:sha-${{ github.sha }}
