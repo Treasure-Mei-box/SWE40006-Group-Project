@@ -1,0 +1,221 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1"/>
+<title>Invoice #{{ invoice.invoice_id[:8].upper() }}</title>
+<link href="https://fonts.googleapis.com/css2?family=Courier+Prime:family=DM+Sans:wght@400;700&display=swap" rel="stylesheet"/>
+<style>
+:root {
+  --ink: #2c3e50;
+  --bg: #f5f6fa;
+  --border: #e2e8f0;
+}
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+body {
+  background: var(--bg);
+  color: var(--ink);
+  font-family: 'DM Sans', sans-serif;
+  padding: 2rem 1rem;
+}
+.no-print-bar {
+  max-width: 800px;
+  margin: 0 auto 1.5rem;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+.back-link {
+  color: #718096;
+  text-decoration: none;
+  font-weight: 500;
+}
+.back-link:hover { text-decoration: underline; }
+.print-btn {
+  background: #ff6b2b;
+  color: #fff;
+  border: none;
+  padding: .5rem 1.25rem;
+  border-radius: 99px;
+  font-weight: 700;
+  cursor: pointer;
+}
+/* Paper Invoice styling */
+.invoice-paper {
+  background: #fff;
+  max-width: 800px;
+  margin: 0 auto;
+  padding: 3rem;
+  border: 1px solid var(--border);
+  box-shadow: 0 10px 25px rgba(0, 0, 0, 0.05);
+  position: relative;
+}
+.invoice-header {
+  display: flex;
+  justify-content: space-between;
+  border-bottom: 2px solid var(--ink);
+  padding-bottom: 1.5rem;
+  margin-bottom: 2rem;
+}
+.brand h1 { font-family: 'Righteous', sans-serif; font-size: 1.8rem; color: #ff6b2b; }
+.brand p { font-size: .8rem; color: #7f8c8d; margin-top: .2rem; }
+.meta { text-align: right; }
+.meta h2 { font-size: 1.4rem; color: #333; margin-bottom: .25rem; }
+.meta p { font-size: .85rem; color: #7f8c8d; }
+
+.billing-info {
+  display: grid;
+  grid-template-columns: 1fr 1fr 1fr; /* 3-column layout */
+  gap: 1.5rem;
+  margin-bottom: 2.5rem;
+  font-size: .9rem;
+}
+.billing-info h3 { font-size: .75rem; text-transform: uppercase; color: #a0aec0; letter-spacing: .05em; margin-bottom: .5rem; }
+.billing-info p { line-height: 1.5; }
+
+.invoice-table {
+  width: 100%;
+  border-collapse: collapse;
+  margin-bottom: 2.5rem;
+}
+.invoice-table th {
+  text-align: left;
+  padding: .75rem 0;
+  border-bottom: 1px solid var(--ink);
+  font-size: .8rem;
+  text-transform: uppercase;
+  color: #718096;
+}
+.invoice-table td {
+  padding: 1rem 0;
+  border-bottom: 1px solid var(--border);
+  font-size: .95rem;
+}
+.invoice-table th.num, .invoice-table td.num { text-align: right; }
+
+.totals {
+  margin-left: auto;
+  width: 280px;
+  font-size: .95rem;
+}
+.totals-row {
+  display: flex;
+  justify-content: space-between;
+  padding: .5rem 0;
+}
+.totals-row.final {
+  border-top: 2px solid var(--ink);
+  font-weight: 700;
+  font-size: 1.2rem;
+  margin-top: .5rem;
+  padding-top: .75rem;
+}
+
+.invoice-footer {
+  margin-top: 4rem;
+  border-top: 1px dashed var(--border);
+  padding-top: 1.5rem;
+  text-align: center;
+  font-size: .8rem;
+  color: #a0aec0;
+}
+
+/* Print Overrides */
+@media print {
+  body { background: #fff; padding: 0; }
+  .no-print-bar { display: none; }
+  .invoice-paper { box-shadow: none; border: none; padding: 0; }
+}
+</style>
+</head>
+<body>
+
+<div class="no-print-bar">
+  <a class="back-link" href="/orders">← Back to My Orders</a>
+  <button class="print-btn" onclick="window.print()">Print Invoice</button>
+</div>
+
+<div class="invoice-paper">
+  <div class="invoice-header">
+    <div class="brand">
+      <h1>ACE Mart</h1>
+      <p>Premium Snack Delivery Service</p>
+    </div>
+    <div class="meta">
+      <h2>INVOICE</h2>
+      <p>ID: #{{ invoice.invoice_id[:8].upper() }}</p>
+      <p>Issued: {{ invoice.issued_at.strftime('%d %B %Y') }}</p>
+    </div>
+  </div>
+
+  <div class="billing-info">
+    <div>
+      <h3>Billed To:</h3>
+      <p><strong>{{ order.customer.username }}</strong></p>
+      <p>{{ order.customer.phone }}</p>
+      <p>{{ order.customer.email }}</p>
+    </div>
+    <div>
+      <h3>Delivery Address:</h3>
+      <p>{{ order.customer.address }}</p>
+    </div>
+    <div>
+      <h3>Payment Details:</h3>
+      {% if payment %}
+        <p><strong>Method:</strong> 
+          {% if "CreditCard" in payment.gateway.gateway_name() %}
+            Credit Card ({{ payment.gateway.card_number_masked }})
+          {% else %}
+            E-Wallet ({{ payment.gateway.provider if payment.gateway.provider else 'TouchNGo' }})
+          {% endif %}
+        </p>
+      {% else %}
+        <p><strong>Method:</strong> Pending</p>
+      {% endif %}
+    </div>
+  </div>
+
+  <table class="invoice-table">
+    <thead>
+      <tr>
+        <th>Description</th>
+        <th class="num">Price</th>
+        <th class="num">Qty</th>
+        <th class="num">Amount</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for item in order.items %}
+      <tr>
+        <td>{{ item.product.name }}</td>
+        <td class="num">${{ "%.2f"|format(item.product.price) }}</td>
+        <td class="num">{{ item.quantity }}</td>
+        <td class="num">${{ "%.2f"|format(item.subtotal()) }}</td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+
+  <div class="totals">
+    <div class="totals-row">
+      <span>Subtotal</span>
+      <span>${{ "%.2f"|format(order.total_amount) }}</span>
+    </div>
+    <div class="totals-row">
+      <span>Shipping</span>
+      <span>{% if order.total_amount >= 25 %}$0.00{% else %}$3.99{% endif %}</span>
+    </div>
+    <div class="totals-row final">
+      <span>Total Paid</span>
+      <span>${{ "%.2f"|format(invoice.amount) }}</span> <!-- Uses the stored grand total -->
+    </div>
+  </div>
+
+  <div class="invoice-footer">
+    <p>Thank you for shopping with ACE Mart!</p>
+    <p>If you have any questions regarding this invoice, please contact support.</p>
+  </div>
+</div>
+
+</body>
+</html>

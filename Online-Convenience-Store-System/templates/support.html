@@ -1,0 +1,264 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1"/>
+<title>Support — ACE Mart</title>
+<link rel="preconnect" href="https://fonts.googleapis.com"/>
+<link href="https://fonts.googleapis.com/css2?family=Righteous&family=DM+Sans:ital,wght@0,300;0,400;0,500;0,700;1,400&display=swap" rel="stylesheet"/>
+<style>
+:root{
+  --bg:#fdf6ec;--surface:#fff9f2;--orange:#ff6b2b;--yellow:#ffc93c;
+  --green:#2ecc71;--red:#ff4757;--dark:#1a1208;--muted:#8b7355;
+  --border:#f0dfc0;--radius:18px;
+}
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+body{background:var(--bg);color:var(--dark);font-family:'DM Sans',sans-serif;min-height:100vh;}
+
+nav{
+  position:sticky;top:0;z-index:100;
+  background:rgba(253,246,236,.92);backdrop-filter:blur(12px);
+  border-bottom:2px solid var(--border);
+  padding:0 2rem;display:flex;align-items:center;gap:1rem;height:68px;
+}
+.logo{font-family:'Righteous',cursive;font-size:1.6rem;color:var(--orange);text-decoration:none;}
+.back-btn{
+  margin-left:auto;display:flex;align-items:center;gap:.4rem;
+  color:var(--muted);font-weight:500;text-decoration:none;font-size:.9rem;
+  padding:.5rem 1rem;border-radius:99px;border:2px solid var(--border);transition:all .2s;
+}
+.back-btn:hover{border-color:var(--orange);color:var(--orange);}
+
+.page{max-width:720px;margin:0 auto;padding:2.5rem 1.5rem;}
+.page-title{font-family:'Righteous',cursive;font-size:2rem;margin-bottom:.25rem;}
+.page-sub{color:var(--muted);font-size:.9rem;margin-bottom:2rem;}
+
+.card{
+  background:var(--surface);border:2px solid var(--border);
+  border-radius:var(--radius);padding:1.35rem 1.5rem;margin-bottom:1rem;
+}
+.card-title{font-family:'Righteous',cursive;font-size:1.1rem;margin-bottom:1rem;}
+
+.form-group{display:flex;flex-direction:column;gap:.35rem;margin-bottom:.85rem;}
+.form-group label{font-size:.78rem;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.05em;}
+.form-group input,.form-group select,.form-group textarea{
+  padding:.65rem .9rem;border:2px solid var(--border);border-radius:10px;
+  background:var(--bg);font-family:inherit;font-size:.9rem;color:var(--dark);
+  outline:none;transition:border-color .2s;
+}
+.form-group input:focus,.form-group select:focus,.form-group textarea:focus{border-color:var(--orange);}
+.form-group textarea{resize:vertical;min-height:100px;}
+.error-msg{color:var(--red);font-size:.78rem;display:none;margin-top:.2rem;}
+
+.submit-btn{
+  background:var(--orange);color:#fff;border:none;border-radius:99px;
+  padding:.75rem 2rem;font-family:'Righteous',cursive;font-size:1rem;
+  cursor:pointer;transition:all .2s;
+}
+.submit-btn:hover{background:#e55a1f;transform:translateY(-2px);}
+
+/* Ticket cards */
+.ticket{
+  background:var(--surface);border:2px solid var(--border);
+  border-radius:var(--radius);padding:1.1rem 1.35rem;margin-bottom:.75rem;
+  animation:slideIn .3s ease both;
+}
+@keyframes slideIn{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:none}}
+
+.ticket-head{display:flex;align-items:flex-start;justify-content:space-between;margin-bottom:.5rem;}
+.ticket-subject{font-weight:700;font-size:.95rem;}
+.ticket-id{font-size:.72rem;color:var(--muted);font-family:monospace;}
+.ticket-desc{font-size:.85rem;color:var(--muted);margin-bottom:.6rem;line-height:1.5;}
+.ticket-foot{display:flex;align-items:center;gap:.75rem;font-size:.78rem;color:var(--muted);}
+
+.badge{
+  display:inline-flex;align-items:center;gap:.3rem;
+  font-size:.7rem;font-weight:700;letter-spacing:.06em;text-transform:uppercase;
+  padding:.25rem .65rem;border-radius:99px;
+}
+.badge-open      {background:rgba(255,71,87,.1);color:var(--red);}
+.badge-in_progress{background:rgba(255,201,60,.15);color:#cc9600;}
+.badge-resolved  {background:rgba(46,204,113,.12);color:var(--green);}
+.badge-closed    {background:rgba(139,115,85,.1);color:var(--muted);}
+
+.resolution{
+  background:rgba(46,204,113,.07);border:1px solid rgba(46,204,113,.25);
+  border-radius:10px;padding:.65rem .9rem;font-size:.82rem;
+  color:var(--dark);margin-top:.6rem;
+}
+.resolution strong{color:var(--green);}
+
+.empty{text-align:center;padding:3rem 2rem;color:var(--muted);}
+.empty .big{font-size:4rem;margin-bottom:.75rem;}
+
+/* Toast */
+.toast{
+  position:fixed;bottom:2rem;left:50%;transform:translateX(-50%) translateY(80px);
+  background:var(--dark);color:#fff;border-radius:99px;
+  padding:.75rem 1.5rem;font-weight:600;font-size:.9rem;
+  transition:transform .35s cubic-bezier(.34,1.56,.64,1);
+  z-index:999;pointer-events:none;white-space:nowrap;
+}
+.toast.show{transform:translateX(-50%) translateY(0);}
+</style>
+</head>
+<body>
+<nav>
+  <a class="logo" href="/">ACE Mart</a>
+  <a class="back-btn" href="/">← Keep Shopping</a>
+</nav>
+
+<div class="page">
+  <div class="page-title">Help & Support</div>
+  <div class="page-sub">{{ customer.username }} &nbsp;·&nbsp; {{ tickets|length }} ticket(s)</div>
+
+  <!-- Submit new ticket -->
+  <div class="card">
+    <div class="card-title">Submit a Support Ticket</div>
+
+    <div class="form-group">
+      <label>Subject *</label>
+      <input type="text" id="t-subject" placeholder="e.g. Missing item, Wrong order, Delivery issue"/>
+      <span class="error-msg" id="err-subject">Subject cannot be blank</span>
+    </div>
+
+    <div class="form-group">
+      <label>Related Order (optional)</label>
+      <select id="t-order">
+        <option value="">— Not related to a specific order —</option>
+        {% for o in orders %}
+        <option value="{{ o.order_id }}">#{{ o.order_id[:8].upper() }} — ${{ "%.2f"|format(o.total_amount + (0 if o.total_amount >= 25 else 3.99)) }} ({{ o.status }})</option>
+        {% endfor %}
+      </select>
+    </div>
+
+    <div class="form-group">
+      <label>Description *</label>
+      <textarea id="t-desc" placeholder="Please describe your issue in detail…"></textarea>
+      <span class="error-msg" id="err-desc">Description cannot be blank</span>
+    </div>
+
+    <button class="submit-btn" onclick="submitTicket()">Submit Ticket</button>
+  </div>
+
+  <!-- Existing tickets -->
+  <div style="font-family:'Righteous',cursive;font-size:1.2rem;margin:1.75rem 0 .75rem;">
+    My Tickets
+  </div>
+
+  {% if tickets %}
+  <div id="ticket-list">
+    {% for t in tickets|reverse %}
+    <div class="ticket">
+      <div class="ticket-head">
+        <div>
+          <div class="ticket-subject">{{ t.subject }}</div>
+          <div class="ticket-id">#{{ t.ticket_id[:8].upper() }}</div>
+        </div>
+        <span class="badge badge-{{ t.status }}">
+          {% if t.status == 'open' %}🔴
+          {% elif t.status == 'in_progress' %}🟡
+          {% elif t.status == 'resolved' %}🟢
+          {% else %}⚫{% endif %}
+          {{ t.status.replace('_', ' ') }}
+        </span>
+      </div>
+      <div class="ticket-desc">{{ t.description }}</div>
+      
+      <!-- Interactive Resolution Box -->
+      {% if t.status == 'resolved' %}
+        <div class="resolution">
+          <strong>Resolution:</strong> {{ t.resolution_notes }}
+          <div style="margin-top: .65rem; text-align: right;">
+            <!-- Reopen Ticket Action Button -->
+            <button class="submit-btn" style="padding: .4rem 1rem; font-size: .78rem; background: var(--orange);" onclick="reopenTicket('{{ t.ticket_id }}')">
+              Reopen Ticket
+            </button>
+          </div>
+        </div>
+      {% elif t.resolution_notes %}
+        <div class="resolution">
+          <strong>Resolution:</strong> {{ t.resolution_notes }}
+        </div>
+      {% endif %}
+      
+      <div class="ticket-foot">
+        <span>{{ t.created_at.strftime('%B %d, %Y') }}</span>
+        {% if t.assigned_to %}
+        <span>Assigned to {{ t.assigned_to.username }}</span>
+        {% endif %}
+        {% if t.order %}
+        <span>Order #{{ t.order.order_id[:8].upper() }}</span>
+        {% endif %}
+      </div>
+    </div>
+    {% endfor %}
+  </div>
+  {% else %}
+  <div class="empty">
+    <p>No support tickets yet. If you have an issue, submit one above.</p>
+  </div>
+  {% endif %}
+</div>
+
+<div class="toast" id="toast"><span id="toast-msg"></span></div>
+
+<script>
+function showToast(msg, error=false) {
+  const t = document.getElementById('toast');
+  document.getElementById('toast-msg').textContent = msg;
+  t.style.background = error ? 'var(--red)' : 'var(--dark)';
+  t.classList.add('show');
+  setTimeout(() => t.classList.remove('show'), 3200);
+}
+
+async function submitTicket() {
+  const subject = document.getElementById('t-subject').value.trim();
+  const desc    = document.getElementById('t-desc').value.trim();
+  const orderId = document.getElementById('t-order').value;
+
+  // Client-side validation
+  let valid = true;
+  const errSubject = document.getElementById('err-subject');
+  const errDesc    = document.getElementById('err-desc');
+  errSubject.style.display = subject ? 'none' : 'block'; if (!subject) valid = false;
+  errDesc.style.display    = desc    ? 'none' : 'block'; if (!desc)    valid = false;
+  if (!valid) return;
+
+  const res  = await fetch('/api/tickets', {
+    method: 'POST', headers: {'Content-Type':'application/json'},
+    body: JSON.stringify({subject, description: desc, order_id: orderId})
+  });
+  const data = await res.json();
+
+  if (data.success) {
+    showToast('Ticket submitted! We\'ll get back to you soon.');
+    document.getElementById('t-subject').value = '';
+    document.getElementById('t-desc').value    = '';
+    document.getElementById('t-order').value   = '';
+    setTimeout(() => location.reload(), 1200);
+  } else {
+    showToast(data.error, true);
+  }
+}
+
+// Reopen a resolved ticket
+async function reopenTicket(ticketId) {
+  if (!confirm("Are you unsatisfied with this resolution? Reopening this ticket will notify our managers.")) return;
+  
+  const res = await fetch('/api/tickets/reopen', {
+    method: 'POST',
+    headers: {'Content-Type': 'application/json'},
+    body: JSON.stringify({ticket_id: ticketId})
+  });
+  const data = await res.json();
+  if (data.success) {
+    showToast('Ticket has been reopened successfully.');
+    setTimeout(() => location.reload(), 1000);
+  } else {
+    showToast(data.error, true);
+  }
+}
+</script>
+</body>
+</html>

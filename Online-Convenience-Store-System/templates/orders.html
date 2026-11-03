@@ -1,0 +1,357 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1"/>
+<title>My Orders — ACE Mart</title>
+<link rel="preconnect" href="https://fonts.googleapis.com"/>
+<link href="https://fonts.googleapis.com/css2?family=Righteous&family=DM+Sans:ital,wght@0,300;0,400;0,500;0,700;1,400&display=swap" rel="stylesheet"/>
+<style>
+:root{
+  --bg:#fdf6ec;--surface:#fff9f2;--orange:#ff6b2b;--yellow:#ffc93c;
+  --green:#2ecc71;--red:#ff4757;--dark:#1a1208;--muted:#8b7355;
+  --border:#f0dfc0;--radius:18px;
+}
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+body{background:var(--bg);color:var(--dark);font-family:'DM Sans',sans-serif;min-height:100vh;}
+
+nav{
+  position:sticky;top:0;z-index:100;
+  background:rgba(253,246,236,.92);backdrop-filter:blur(12px);
+  border-bottom:2px solid var(--border);
+  padding:0 2rem;display:flex;align-items:center;gap:1rem;height:68px;
+}
+.logo{font-family:'Righteous',cursive;font-size:1.6rem;color:var(--orange);text-decoration:none;}
+.nav-right{margin-left:auto;display:flex;align-items:center;gap:.75rem;}
+.back-btn{
+  display:flex;align-items:center;gap:.4rem;
+  color:var(--muted);font-weight:500;text-decoration:none;font-size:.9rem;
+  padding:.5rem 1rem;border-radius:99px;border:2px solid var(--border);transition:all .2s;
+}
+.back-btn:hover{border-color:var(--orange);color:var(--orange);}
+
+.page{max-width:700px;margin:0 auto;padding:2.5rem 1.5rem;}
+.page-title{font-family:'Righteous',cursive;font-size:2rem;margin-bottom:.25rem;}
+.page-sub{color:var(--muted);font-size:.9rem;margin-bottom:2rem;}
+
+/* Interactive card transitions */
+.order-card{
+  background:var(--surface);border:2px solid var(--border);
+  border-radius:var(--radius);padding:1.25rem 1.5rem;margin-bottom:1rem;
+  cursor:pointer;transition:all .25s ease;
+  animation:slideIn .35s ease both;
+}
+.order-card:hover {
+  transform:translateY(-2px);border-color:var(--orange);
+  box-shadow:0 4px 18px rgba(255,107,43,.08);
+}
+@keyframes slideIn{from{opacity:0;transform:translateY(10px)}to{opacity:1;transform:none}}
+
+.order-head{display:flex;align-items:flex-start;justify-content:space-between;margin-bottom:1rem;}
+.order-id{font-size:.72rem;color:var(--muted);font-family:monospace;margin-bottom:.3rem;}
+.order-date{font-size:.78rem;color:var(--muted);}
+.order-total{font-family:'Righteous',cursive;font-size:1.4rem;color:var(--orange);}
+
+.status-pill{
+  display:inline-flex;align-items:center;gap:.35rem;
+  font-size:.72rem;font-weight:700;letter-spacing:.06em;text-transform:uppercase;
+  padding:.3rem .8rem;border-radius:99px;margin-top:.35rem;
+}
+.status-shipped  {background:rgba(156,90,255,.12);color:#9c5aff;}
+.status-delivered{background:rgba(46,204,113,.12);color:var(--green);}
+.status-processing{background:rgba(255,201,60,.15);color:#cc9600;}
+.status-pending  {background:rgba(139,115,85,.1);color:var(--muted);}
+
+.order-items{display:flex;flex-wrap:wrap;gap:.5rem;margin-bottom:1rem;}
+.order-item-chip{
+  background:var(--bg);border:1px solid var(--border);
+  border-radius:99px;padding:.3rem .75rem;
+  font-size:.8rem;display:flex;align-items:center;gap:.3rem;
+}
+
+/* Expanded section */
+.order-details-expand {
+  max-height:0;overflow:hidden;
+  transition:max-height .35s cubic-bezier(0.4, 0, 0.2, 1);
+  border-top:1px solid transparent;margin-top:0;padding-top:0;
+}
+.order-card.expanded .order-details-expand {
+  max-height:200px;
+  border-top-color:var(--border);margin-top:.75rem;padding-top:.75rem;
+}
+.details-row {
+  display:flex;justify-content:space-between;font-size:.85rem;
+  margin-bottom:.5rem;color:var(--muted);
+}
+.details-row strong { color:var(--dark); }
+
+.order-foot{
+  display:flex;align-items:center;gap:.75rem;flex-wrap:wrap;
+  padding-top:.75rem;border-top:1px solid var(--border);
+  font-size:.8rem;color:var(--muted);
+}
+.paid-badge{
+  background:rgba(46,204,113,.12);color:var(--green);
+  border-radius:99px;padding:.2rem .65rem;font-weight:700;font-size:.72rem;
+}
+.feedback-stars{color:var(--yellow);font-size:.9rem;}
+
+/* View Invoice Button */
+.invoice-link-btn {
+  background:transparent;border:2px solid var(--border);color:var(--muted);
+  border-radius:99px;padding:.3rem .8rem;font-size:.72rem;font-weight:700;
+  text-decoration:none;transition:all .15s;display:inline-flex;align-items:center;gap:.25rem;
+}
+.invoice-link-btn:hover {
+  border-color:var(--orange);color:var(--orange);background:rgba(255,107,43,.04);
+}
+
+/* Feedback Form */
+.feedback-form{
+  margin-top:.9rem;padding:.9rem 1rem;
+  background:var(--bg);border:1px solid var(--border);border-radius:12px;
+  display:none;
+}
+.feedback-form.open{display:block;animation:fadeIn .2s ease;}
+@keyframes fadeIn{from{opacity:0}to{opacity:1}}
+
+.star-row{display:flex;gap:.35rem;margin-bottom:.75rem;}
+.star-btn{
+  font-size:1.5rem;cursor:pointer;opacity:.3;
+  transition:opacity .15s,transform .15s;background:none;border:none;padding:0;
+}
+.star-btn.selected,.star-btn:hover{opacity:1;transform:scale(1.2);}
+
+.fb-input{
+  width:100%;padding:.6rem .85rem;border:2px solid var(--border);
+  border-radius:10px;font-family:inherit;font-size:.88rem;
+  background:var(--surface);outline:none;resize:none;
+  transition:border-color .2s;
+}
+.fb-input:focus{border-color:var(--orange);}
+.error-msg{color:var(--red);font-size:.75rem;display:none;margin-top:.3rem;}
+
+.fb-submit{
+  margin-top:.65rem;background:var(--orange);color:#fff;border:none;
+  border-radius:99px;padding:.55rem 1.25rem;font-family:inherit;
+  font-size:.85rem;font-weight:700;cursor:pointer;transition:all .2s;
+}
+.fb-submit:hover{background:#e55a1f;}
+
+.leave-fb-btn{
+  background:rgba(255,201,60,.15);color:#cc9600;
+  border:1px solid rgba(255,201,60,.4);border-radius:99px;
+  padding:.25rem .7rem;font-size:.75rem;font-weight:700;
+  cursor:pointer;transition:all .2s;
+}
+.leave-fb-btn:hover{background:var(--yellow);color:var(--dark);}
+
+.empty{text-align:center;padding:4rem 2rem;color:var(--muted);}
+.empty .big{font-size:5rem;margin-bottom:1rem;}
+.empty h3{font-family:'Righteous',cursive;font-size:1.6rem;color:var(--dark);margin-bottom:.5rem;}
+.shop-link{
+  display:inline-block;margin-top:1.25rem;
+  background:var(--orange);color:#fff;text-decoration:none;
+  border-radius:99px;padding:.75rem 2rem;font-weight:700;transition:all .2s;
+}
+.shop-link:hover{background:#e55a1f;transform:translateY(-2px);}
+
+.toast{
+  position:fixed;bottom:2rem;left:50%;transform:translateX(-50%) translateY(80px);
+  background:var(--dark);color:#fff;border-radius:99px;
+  padding:.75rem 1.5rem;font-weight:600;font-size:.9rem;
+  transition:transform .35s cubic-bezier(.34,1.56,.64,1);
+  z-index:999;pointer-events:none;white-space:nowrap;
+}
+.toast.show{transform:translateX(-50%) translateY(0);}
+</style>
+</head>
+<body>
+<nav>
+  <a class="logo" href="/">ACE Mart</a>
+  <div class="nav-right">
+    <a class="back-btn" href="/support">Support</a>
+    <a class="back-btn" href="/">← Shop</a>
+  </div>
+</nav>
+
+<div class="page">
+  <div class="page-title">My Orders</div>
+  <div class="page-sub">{{ customer.username }} &nbsp;·&nbsp; {{ orders|length }} order(s)</div>
+
+  {% if orders %}
+    {% for order in orders|reverse %}
+    <!-- Click card to toggle class .expanded -->
+    <div class="order-card" data-delay="{{ loop.index0 }}" onclick="toggleCard(this, event)">
+      <div class="order-head">
+        <div>
+          <div class="order-id">#{{ order.order_id[:8].upper() }}</div>
+          <div class="order-date">{{ order.placed_at.strftime('%B %d, %Y') }}</div>
+          <div>
+            <span class="status-pill status-{{ order.status }}">
+              {% if order.status == 'shipped' %}🚚
+              {% elif order.status == 'delivered' %}✅
+              {% elif order.status == 'processing' %}⏳
+              {% else %}🕐{% endif %}
+              {{ order.status }}
+            </span>
+          </div>
+        </div>
+        <div class="order-total">${{ "%.2f"|format(order.total_amount + (0 if order.total_amount >= 25 else 3.99)) }}</div>
+      </div>
+
+      <div class="order-items">
+        {% for item in order.items %}
+        <div class="order-item-chip">
+          {{ item.product.image_url }} {{ item.product.name }}
+          {% if item.quantity > 1 %}<strong>×{{ item.quantity }}</strong>{% endif %}
+        </div>
+        {% endfor %}
+      </div>
+
+      <!-- Extended Details shown on Click -->
+      <div class="order-details-expand">
+        <div class="details-row">
+          <span>Delivery Address:</span>
+          <strong>{{ order.customer.address }}</strong>
+        </div>
+        {% if order.shipments %}
+          {% set ship = order.shipments[0] %}
+          <div class="details-row">
+            <span>Shipping Carrier:</span>
+            <strong>{{ ship.carrier }}</strong>
+          </div>
+          <div class="details-row">
+            <span>Tracking Number:</span>
+            <strong><code>{{ ship.tracking_number }}</code></strong>
+          </div>
+        {% endif %}
+      </div>
+
+      <div class="order-foot" onclick="event.stopPropagation();">
+        {% if order.is_paid() %}
+        <span class="paid-badge">✓ Paid</span>
+        {% endif %}
+        
+        <!-- View Invoice Button -->
+        {% if order.invoice %}
+        <a class="invoice-link-btn" href="/invoice/{{ order.invoice.invoice_id }}" target="_blank">
+          📄 View Invoice
+        </a>
+        {% endif %}
+
+        {% if order.feedback %}
+        {# Show existing feedback stars #}
+        <span class="feedback-stars">
+          {% for i in range(order.feedback.rating) %}★{% endfor %}{% for i in range(5 - order.feedback.rating) %}☆{% endfor %}
+        </span>
+        <span style="font-style:italic">"{{ order.feedback.comment[:60] }}{% if order.feedback.comment|length > 60 %}…{% endif %}"</span>
+        {% elif order.status == 'delivered' %}
+        {# Feedback not yet submitted — show button #}
+        <button class="leave-fb-btn" onclick="toggleFeedback('{{ order.order_id }}')">
+          ⭐ Leave Review
+        </button>
+        {% endif %}
+      </div>
+
+      {# Inline feedback form (only for delivered orders without feedback) #}
+      {% if not order.feedback and order.status == 'delivered' %}
+      <div class="feedback-form" id="fb-{{ order.order_id }}" onclick="event.stopPropagation();">
+        <div style="font-size:.82rem;font-weight:700;margin-bottom:.5rem;">Rate your order:</div>
+        <div class="star-row" id="stars-{{ order.order_id }}">
+          {% for i in range(1,6) %}
+          <button class="star-btn" data-val="{{ i }}"
+                  onclick="selectStar('{{ order.order_id }}', '{{ i }}')">★</button>
+          {% endfor %}
+        </div>
+        <span class="error-msg" id="err-star-{{ order.order_id }}">Please select a rating</span>
+        <textarea class="fb-input" id="fb-comment-{{ order.order_id }}"
+                  rows="3" placeholder="Tell us about your experience…"></textarea>
+        <span class="error-msg" id="err-comment-{{ order.order_id }}">Comment cannot be blank</span>
+        <br/>
+        <button class="fb-submit" onclick="submitFeedback('{{ order.order_id }}')">
+          ⭐ Submit Review
+        </button>
+      </div>
+      {% endif %}
+    </div>
+    {% endfor %}
+  {% else %}
+  <div class="empty">
+    <div class="big">📦</div>
+    <h3>No orders yet!</h3>
+    <p>Time to fill that cart with something delicious.</p>
+    <a class="shop-link" href="/">Shop Now</a>
+  </div>
+  {% endif %}
+</div>
+
+<div class="toast" id="toast"><span id="toast-msg"></span></div>
+
+<script>
+// Toggle card details on click
+function toggleCard(card, event) {
+  // Prevent expanding if clicking input forms/buttons
+  if (event.target.closest('button') || event.target.closest('a') || event.target.closest('textarea')) {
+    return;
+  }
+  card.classList.toggle('expanded');
+}
+
+// Staggered animations
+document.querySelectorAll('.order-card[data-delay]').forEach(card => {
+  card.style.animationDelay = (parseInt(card.dataset.delay) * 0.08) + 's';
+});
+
+function showToast(msg, error=false) {
+  const t = document.getElementById('toast');
+  document.getElementById('toast-msg').textContent = msg;
+  t.style.background = error ? 'var(--red)' : 'var(--dark)';
+  t.classList.add('show');
+  setTimeout(() => t.classList.remove('show'), 3000);
+}
+
+// ── Feedback form ──
+const ratings = {};  // orderId → selected rating
+
+function toggleFeedback(orderId) {
+  const form = document.getElementById('fb-' + orderId);
+  form.classList.toggle('open');
+}
+
+function selectStar(orderId, val) {
+  ratings[orderId] = val;
+  document.querySelectorAll(`#stars-${orderId} .star-btn`).forEach(btn => {
+    btn.classList.toggle('selected', parseInt(btn.dataset.val) <= val);
+  });
+  document.getElementById('err-star-' + orderId).style.display = 'none';
+}
+
+async function submitFeedback(orderId) {
+  const rating  = ratings[orderId] || 0;
+  const comment = document.getElementById('fb-comment-' + orderId).value.trim();
+
+  // Client-side validation
+  let valid = true;
+  const errStar    = document.getElementById('err-star-' + orderId);
+  const errComment = document.getElementById('err-comment-' + orderId);
+  errStar.style.display    = rating  ? 'none' : 'block'; if (!rating)  valid = false;
+  errComment.style.display = comment ? 'none' : 'block'; if (!comment) valid = false;
+  if (!valid) return;
+
+  const res  = await fetch('/api/feedback', {
+    method: 'POST', headers: {'Content-Type':'application/json'},
+    body: JSON.stringify({order_id: orderId, rating, comment})
+  });
+  const data = await res.json();
+
+  if (data.success) {
+    showToast('⭐ Thank you for your review!');
+    setTimeout(() => location.reload(), 1000);
+  } else {
+    showToast('❌ ' + data.error, true);
+  }
+}
+</script>
+</body>
+</html>

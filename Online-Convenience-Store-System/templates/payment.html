@@ -1,0 +1,476 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1"/>
+<title>Payment — ACE Mart</title>
+<link rel="preconnect" href="https://fonts.googleapis.com"/>
+<link href="https://fonts.googleapis.com/css2?family=Righteous&family=DM+Sans:ital,wght@0,300;0,400;0,500;0,700;1,400&display=swap" rel="stylesheet"/>
+<style>
+:root{
+  --bg:#fdf6ec; --surface:#fff9f2; --orange:#ff6b2b; --yellow:#ffc93c;
+  --green:#2ecc71; --red:#ff4757; --dark:#1a1208; --muted:#8b7355;
+  --border:#f0dfc0; --radius:18px; --shadow:0 4px 24px rgba(255,107,43,.12);
+}
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+body{
+  background:var(--bg);color:var(--dark);font-family:'DM Sans',sans-serif;
+  min-height:100vh;display:flex;flex-direction:column;
+}
+
+nav{
+  position:sticky;top:0;z-index:100;
+  background:rgba(253,246,236,.92);backdrop-filter:blur(12px);
+  border-bottom:2px solid var(--border);
+  padding:0 2rem;display:flex;align-items:center;gap:1rem;height:68px;
+}
+.logo{font-family:'Righteous',cursive;font-size:1.6rem;color:var(--orange);text-decoration:none;}
+.secure-badge{
+  margin-left:auto;font-size:.8rem;color:var(--muted);
+  display:flex;align-items:center;gap:.4rem;
+}
+
+.page{
+  flex:1;max-width:520px;margin:0 auto;
+  padding:2.5rem 1.5rem;width:100%;
+}
+.page-title{font-family:'Righteous',cursive;font-size:1.8rem;margin-bottom:.25rem;}
+.page-sub{color:var(--muted);font-size:.88rem;margin-bottom:2rem;}
+
+/* Order summary strip */
+.order-strip{
+  background:var(--surface);border:2px solid var(--border);
+  border-radius:var(--radius);padding:1rem 1.25rem;
+  margin-bottom:1.5rem;display:flex;justify-content:space-between;align-items:center;
+}
+.order-strip .label{font-size:.8rem;color:var(--muted);}
+.order-strip .amount{font-family:'Righteous',cursive;font-size:1.5rem;color:var(--orange);}
+
+/* Gateway selector tabs */
+.gw-tabs{display:flex;gap:.5rem;margin-bottom:1.25rem;}
+.gw-tab{
+  flex:1;padding:.65rem;border-radius:12px;
+  border:2px solid var(--border);background:var(--surface);
+  font-family:inherit;font-size:.88rem;font-weight:700;color:var(--muted);
+  cursor:pointer;transition:all .2s;text-align:center;
+}
+.gw-tab:hover{border-color:var(--orange);color:var(--orange);}
+.gw-tab.active{border-color:var(--orange);background:rgba(255,107,43,.07);color:var(--orange);}
+
+/* Form panels */
+.panel{display:none;}
+.panel.active{display:block;animation:fadeIn .2s ease;}
+@keyframes fadeIn{from{opacity:0;transform:translateY(4px)}to{opacity:1;transform:none}}
+
+.card{
+  background:var(--surface);border:2px solid var(--border);
+  border-radius:var(--radius);padding:1.35rem 1.5rem;margin-bottom:1rem;
+}
+
+.form-group{margin-bottom:.85rem;}
+.form-group label{
+  display:block;font-size:.75rem;font-weight:700;color:var(--muted);
+  text-transform:uppercase;letter-spacing:.05em;margin-bottom:.35rem;
+}
+.form-group input,.form-group select{
+  width:100%;padding:.65rem .9rem;border:2px solid var(--border);
+  border-radius:10px;background:var(--bg);font-family:inherit;
+  font-size:.9rem;color:var(--dark);outline:none;transition:border-color .2s;
+  letter-spacing:.04em;
+}
+.form-group input:focus,.form-group select:focus{border-color:var(--orange);}
+.form-row{display:grid;grid-template-columns:1fr 1fr;gap:.75rem;}
+
+.error-msg{color:var(--red);font-size:.75rem;display:none;margin-top:.25rem;}
+
+/* Simulate failure toggle */
+.sim-row{
+  display:flex;align-items:center;justify-content:space-between;
+  background:rgba(255,71,87,.06);border:1px solid rgba(255,71,87,.2);
+  border-radius:10px;padding:.6rem .9rem;margin-bottom:1.25rem;
+  font-size:.8rem;color:var(--red);font-weight:600;
+}
+.toggle{
+  position:relative;width:40px;height:22px;cursor:pointer;
+}
+.toggle input{opacity:0;width:0;height:0;}
+.toggle-slider{
+  position:absolute;inset:0;background:var(--border);border-radius:99px;
+  transition:.3s;
+}
+.toggle-slider::before{
+  content:'';position:absolute;height:16px;width:16px;
+  left:3px;bottom:3px;background:#fff;border-radius:50%;transition:.3s;
+}
+.toggle input:checked + .toggle-slider{background:var(--red);}
+.toggle input:checked + .toggle-slider::before{transform:translateX(18px);}
+
+/* Pay button */
+.pay-btn{
+  width:100%;padding:.9rem;border:none;border-radius:99px;
+  font-family:'Righteous',cursive;font-size:1.1rem;
+  background:var(--orange);color:#fff;cursor:pointer;
+  transition:all .2s;display:flex;align-items:center;justify-content:center;gap:.5rem;
+}
+.pay-btn:hover{background:#e55a1f;transform:translateY(-2px);box-shadow:0 6px 20px rgba(255,107,43,.3);}
+.pay-btn:disabled{background:var(--border);color:var(--muted);transform:none;cursor:not-allowed;}
+
+/* Processing overlay */
+.overlay{
+  display:none;position:fixed;inset:0;
+  background:rgba(26,18,8,.6);backdrop-filter:blur(4px);
+  z-index:200;align-items:center;justify-content:center;
+}
+.overlay.show{display:flex;}
+
+/* Result modal */
+.result-modal{
+  background:var(--surface);border:2px solid var(--border);
+  border-radius:24px;padding:2.5rem 2rem;text-align:center;
+  max-width:380px;width:90%;
+  animation:popIn .4s cubic-bezier(.34,1.56,.64,1);
+}
+@keyframes popIn{from{transform:scale(.8);opacity:0}to{transform:scale(1);opacity:1}}
+.result-icon{font-size:4rem;margin-bottom:.75rem;}
+.result-title{font-family:'Righteous',cursive;font-size:1.5rem;margin-bottom:.5rem;}
+.result-sub{color:var(--muted);font-size:.88rem;line-height:1.5;margin-bottom:.5rem;}
+.result-txn{
+  font-family:monospace;font-size:.75rem;color:var(--muted);
+  background:var(--bg);border:1px solid var(--border);
+  border-radius:8px;padding:.4rem .7rem;display:inline-block;margin:.5rem 0 1.25rem;
+}
+.modal-btn{
+  display:inline-flex;align-items:center;gap:.4rem;
+  padding:.7rem 1.75rem;border:none;border-radius:99px;
+  font-family:'Righteous',cursive;font-size:.95rem;cursor:pointer;
+  transition:all .2s;margin:.25rem;
+}
+.modal-btn-primary{background:var(--orange);color:#fff;}
+.modal-btn-primary:hover{background:#e55a1f;}
+.modal-btn-outline{
+  background:transparent;border:2px solid var(--border);color:var(--muted);
+}
+.modal-btn-outline:hover{border-color:var(--orange);color:var(--orange);}
+
+/* Processing spinner */
+.spinner-wrap{text-align:center;color:#fff;}
+.spinner{
+  width:56px;height:56px;border:4px solid rgba(255,255,255,.3);
+  border-top-color:#fff;border-radius:50%;
+  animation:spin .8s linear infinite;margin:0 auto 1rem;
+}
+@keyframes spin{to{transform:rotate(360deg)}}
+.spinner-wrap p{font-family:'Righteous',cursive;font-size:1.1rem;opacity:.9;}
+.spinner-wrap small{opacity:.6;font-size:.82rem;}
+</style>
+</head>
+<body>
+
+<nav>
+  <a class="logo" href="/">ACE Mart</a>
+  <div class="secure-badge">Secure Checkout</div>
+</nav>
+
+<div class="page">
+  <div class="page-title">Payment</div>
+  <div class="page-sub">Complete your order securely. No real charges will be made.</div>
+
+  <!-- Order summary -->
+  <div class="order-strip">
+    <div>
+      <div class="label">Order Total</div>
+      <div style="font-size:.82rem;color:var(--muted);" id="item-count-label">Loading…</div>
+    </div>
+    <div class="amount" id="order-total">$0.00</div>
+  </div>
+
+  <!-- Gateway selector: CreditCard / EWallet -->
+  <div class="gw-tabs">
+    <button class="gw-tab active" id="tab-credit" onclick="setGateway('credit')">
+      💳 Credit / Debit Card
+    </button>
+    <button class="gw-tab" id="tab-ewallet" onclick="setGateway('ewallet')">
+      📱 E-Wallet
+    </button>
+  </div>
+
+  <!-- ── CREDIT CARD PANEL ── -->
+  <div class="panel active card" id="panel-credit">
+    <div class="form-group">
+      <label>Cardholder Name</label>
+      <input type="text" id="cc-name" placeholder="Alex Kim" autocomplete="cc-name"/>
+      <span class="error-msg" id="err-cc-name">Name cannot be blank</span>
+    </div>
+    <div class="form-group">
+      <label>Card Number</label>
+      <input type="text" id="cc-number" placeholder="1234 5678 9012 3456"
+             maxlength="19" oninput="formatCard(this)" autocomplete="cc-number"/>
+      <span class="error-msg" id="err-cc-number">Enter a 16-digit card number</span>
+    </div>
+    <div class="form-row">
+      <div class="form-group">
+        <label>Expiry Date</label>
+        <input type="text" id="cc-expiry" placeholder="MM/YY" maxlength="5"
+               oninput="formatExpiry(this)" autocomplete="cc-exp"/>
+        <span class="error-msg" id="err-cc-expiry">Enter a valid expiry (MM/YY)</span>
+      </div>
+      <div class="form-group">
+        <label>CVV</label>
+        <input type="text" id="cc-cvv" placeholder="123" maxlength="4"
+               oninput="this.value=this.value.replace(/\D/g,'')" autocomplete="cc-csc"/>
+        <span class="error-msg" id="err-cc-cvv">Enter 3 or 4 digit CVV</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- ── E-WALLET PANEL ── -->
+  <div class="panel card" id="panel-ewallet">
+    <div class="form-group">
+      <label>E-Wallet Provider</label>
+      <select id="ew-provider">
+        <option value="TouchNGo">Touch 'n Go eWallet</option>
+        <option value="GrabPay">GrabPay</option>
+        <option value="Boost">Boost</option>
+        <option value="PayPal">PayPal</option>
+      </select>
+    </div>
+    <div class="form-group">
+      <label>Wallet / Mobile Number</label>
+      <input type="text" id="ew-number" placeholder="012-3456789" autocomplete="tel"/>
+      <span class="error-msg" id="err-ew-number">Phone / wallet number cannot be blank</span>
+    </div>
+    <div style="font-size:.78rem;color:var(--muted);margin-top:-.25rem;line-height:1.5;">
+      You will receive a push notification on your e-wallet app to approve this payment.
+    </div>
+  </div>
+
+  <!-- Simulate failure toggle (demo purposes) -->
+  <div class="sim-row">
+    <span>🧪 Simulate payment failure (for demo)</span>
+    <label class="toggle">
+      <input type="checkbox" id="sim-fail"/>
+      <span class="toggle-slider"></span>
+    </label>
+  </div>
+
+  <button class="pay-btn" id="pay-btn" onclick="submitPayment()">
+    Pay <span id="pay-amount">$0.00</span>
+  </button>
+</div>
+
+<!-- Processing overlay -->
+<div class="overlay" id="overlay">
+  <div class="spinner-wrap">
+    <div class="spinner"></div>
+    <p id="processing-msg">Contacting payment gateway…</p>
+    <small id="processing-sub">Please do not close this page</small>
+  </div>
+</div>
+
+<!-- Result modal (inside overlay) — hidden until result arrives -->
+<div class="overlay" id="result-overlay">
+  <div class="result-modal" id="result-modal">
+    <!-- filled dynamically -->
+  </div>
+</div>
+
+<script>
+// ── State ──
+let currentGateway = 'credit';
+let orderData      = null;   // loaded from cart on page load
+
+// Load cart total and apply shipping rules dynamically on page load
+async function loadCart() {
+  try {
+    const res  = await fetch('/api/cart');
+    const data = await res.json();
+    
+    const subtotal = data.total || 0;
+    const shipping = subtotal >= 25 ? 0 : 3.99;
+    const grand = subtotal + shipping;
+    
+    document.getElementById('order-total').textContent = '$' + grand.toFixed(2);
+    document.getElementById('pay-amount').textContent  = '$' + grand.toFixed(2);
+    
+    // Detailed shipping label feedback
+    document.getElementById('item-count-label').textContent =
+      data.item_count + ' item' + (data.item_count !== 1 ? 's' : '') + ' in cart' + 
+      (shipping === 0 ? ' (Free Shipping 🎉)' : ' (Includes $3.99 shipping)');
+      
+    orderData = data;
+    if (data.item_count === 0) {
+      window.location.href = '/cart';
+    }
+  } catch(e) {
+    document.getElementById('item-count-label').textContent = 'Could not load cart';
+  }
+}
+loadCart();
+
+// ── Gateway tab switching ──
+function setGateway(gw) {
+  currentGateway = gw;
+  document.getElementById('panel-credit').classList.toggle('active', gw === 'credit');
+  document.getElementById('panel-ewallet').classList.toggle('active', gw === 'ewallet');
+  document.getElementById('tab-credit').classList.toggle('active', gw === 'credit');
+  document.getElementById('tab-ewallet').classList.toggle('active', gw === 'ewallet');
+}
+
+// ── Input formatters ──
+function formatCard(input) {
+  let v = input.value.replace(/\D/g, '').slice(0, 16);
+  input.value = v.match(/.{1,4}/g)?.join(' ') || v;
+}
+function formatExpiry(input) {
+  let v = input.value.replace(/\D/g, '').slice(0, 4);
+  if (v.length >= 3) v = v.slice(0, 2) + '/' + v.slice(2);
+  input.value = v;
+}
+
+// ── Validation ──
+function showErr(id, show) {
+  document.getElementById(id).style.display = show ? 'block' : 'none';
+}
+
+function validateCredit() {
+  let ok = true;
+  const name   = document.getElementById('cc-name').value.trim();
+  const number = document.getElementById('cc-number').value.replace(/\s/g, '');
+  const expiry = document.getElementById('cc-expiry').value.trim();
+  const cvv    = document.getElementById('cc-cvv').value.trim();
+
+  showErr('err-cc-name',   !name);                      if (!name)   ok = false;
+  showErr('err-cc-number', number.length !== 16);       if (number.length !== 16) ok = false;
+  showErr('err-cc-expiry', !/^\d{2}\/\d{2}$/.test(expiry)); if (!/^\d{2}\/\d{2}$/.test(expiry)) ok = false;
+  showErr('err-cc-cvv',    cvv.length < 3);             if (cvv.length < 3) ok = false;
+  return ok;
+}
+
+function validateEwallet() {
+  const num = document.getElementById('ew-number').value.trim();
+  showErr('err-ew-number', !num);
+  return !!num;
+}
+
+// ── Payment submission ──
+async function submitPayment() {
+  // Validate form
+  const valid = currentGateway === 'credit' ? validateCredit() : validateEwallet();
+  if (!valid) return;
+
+  const simFail = document.getElementById('sim-fail').checked;
+
+  // Show processing overlay with steps (Scenario 1: steps 11-13)
+  const overlay = document.getElementById('overlay');
+  overlay.classList.add('show');
+  setProcessingMsg('Contacting payment gateway…', 'Authorising transaction with provider');
+
+  await sleep(1200);
+  setProcessingMsg('Authorising transaction…', 'Please do not close this page');
+
+  await sleep(1000);
+  setProcessingMsg('Awaiting provider response…', 'Almost there');
+
+  await sleep(900);
+
+  // Call checkout API
+  try {
+    const res  = await fetch('/api/cart/checkout', {
+      method:  'POST',
+      headers: {'Content-Type': 'application/json'},
+      body:    JSON.stringify({
+        gateway:    currentGateway === 'credit' ? 'credit_card' : 'ewallet',
+        simulate_failure: simFail,
+      })
+    });
+
+    overlay.classList.remove('show');
+
+    // Handle redirect to login (HTML response)
+    const ct = res.headers.get('content-type') || '';
+    if (!ct.includes('application/json')) {
+      window.location.href = '/login';
+      return;
+    }
+
+    const data = await res.json();
+
+    if (data.login_required) {
+      window.location.href = '/login';
+      return;
+    }
+
+    if (data.success) {
+      showSuccess(data);
+    } else {
+      showFailure(data.error || 'Payment declined by provider.');
+    }
+
+  } catch(e) {
+    overlay.classList.remove('show');
+    showFailure('Network error. Please try again.');
+  }
+}
+
+// ── Result screens ──
+
+// SUCCESS: Scenario 1 steps 14-17
+// → Payment Success → Generate Invoice → Update Status to Paid → Order Confirmed → Notify Shipping
+function showSuccess(data) {
+  const txnId = data.transaction_id || ('TXN-' + Math.random().toString(36).slice(2,10).toUpperCase());
+  document.getElementById('result-modal').innerHTML = `
+    <div class="result-icon">🎉</div>
+    <div class="result-title" style="color:var(--green)">Payment Authorised!</div>
+    <div class="result-sub">
+      Your payment was successfully processed.<br/>
+      <strong>Invoice generated</strong> · Order status updated to <strong>Paid</strong> ✓<br/>
+      Your order is now being prepared for shipment. 🚚
+    </div>
+    <div class="result-txn">Transaction ID: ${txnId}</div>
+    <br/>
+    <button class="modal-btn modal-btn-primary" onclick="window.location.href='/orders'">
+      📦 View My Orders
+    </button>
+  `;
+  document.getElementById('result-overlay').classList.add('show');
+}
+
+// FAILURE: Scenario 1 steps 19-24
+// → Authorise transaction → Returns failure status → Notify failure → Update status to Pending → Payment Failed
+function showFailure(reason) {
+  document.getElementById('result-modal').innerHTML = `
+    <div class="result-icon">❌</div>
+    <div class="result-title" style="color:var(--red)">Payment Declined</div>
+    <div class="result-sub">
+      ${reason}<br/><br/>
+      Your order has been kept as <strong>Pending</strong>.<br/>
+      You may retry with a different payment method.
+    </div>
+    <br/>
+    <button class="modal-btn modal-btn-primary" onclick="retryPayment()">
+      🔄 Try Another Method
+    </button>
+    <button class="modal-btn modal-btn-outline" onclick="window.location.href='/cart'">
+      ← Back to Cart
+    </button>
+  `;
+  document.getElementById('result-overlay').classList.add('show');
+}
+
+function retryPayment() {
+  document.getElementById('result-overlay').classList.remove('show');
+  // Switch gateway and let user retry (Scenario 1: "allowing a reattempt with an alternative payment method")
+  const other = currentGateway === 'credit' ? 'ewallet' : 'credit';
+  setGateway(other);
+  window.scrollTo({top: 0, behavior: 'smooth'});
+}
+
+// ── Helpers ──
+function setProcessingMsg(msg, sub) {
+  document.getElementById('processing-msg').textContent = msg;
+  document.getElementById('processing-sub').textContent = sub;
+}
+function sleep(ms) { return new Promise(r => setTimeout(r, ms)); }
+</script>
+</body>
+</html>

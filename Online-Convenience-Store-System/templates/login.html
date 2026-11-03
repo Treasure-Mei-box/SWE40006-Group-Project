@@ -1,0 +1,416 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1"/>
+<title>Sign In — ACE Mart</title>
+<link rel="preconnect" href="https://fonts.googleapis.com"/>
+<link href="https://fonts.googleapis.com/css2?family=Righteous&family=DM+Sans:ital,wght@0,300;0,400;0,500;0,700;1,400&display=swap" rel="stylesheet"/>
+<style>
+:root {
+  --bg:#fdf6ec; --surface:#fff9f2; --orange:#ff6b2b; --yellow:#ffc93c;
+  --green:#2ecc71; --red:#ff4757; --dark:#1a1208; --muted:#8b7355;
+  --border:#f0dfc0; --radius:18px; --shadow:0 4px 24px rgba(255,107,43,.12);
+}
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+body{
+  background:var(--bg);color:var(--dark);font-family:'DM Sans',sans-serif;
+  min-height:100vh;display:flex;flex-direction:column;
+  background-image:
+    radial-gradient(circle at 10% 20%, rgba(255,201,60,.15) 0%, transparent 40%),
+    radial-gradient(circle at 90% 80%, rgba(255,107,43,.10) 0%, transparent 40%);
+}
+
+/* Floating snack decorations */
+.floaters{position:fixed;inset:0;pointer-events:none;overflow:hidden;z-index:0;}
+.floater{
+  position:absolute;font-size:2rem;opacity:.12;
+  animation:float 6s ease-in-out infinite;
+}
+.floater:nth-child(1){top:8%;left:4%;animation-delay:0s;}
+.floater:nth-child(2){top:15%;right:6%;animation-delay:1s;}
+.floater:nth-child(3){top:65%;left:3%;animation-delay:2s;}
+.floater:nth-child(4){top:72%;right:5%;animation-delay:1.5s;}
+.floater:nth-child(5){top:42%;left:10%;animation-delay:.5s;}
+.floater:nth-child(6){top:38%;right:10%;animation-delay:2.5s;}
+@keyframes float{
+  0%,100%{transform:translateY(0) rotate(-5deg);}
+  50%{transform:translateY(-16px) rotate(5deg);}
+}
+
+nav{
+  position:relative;z-index:10;
+  background:rgba(253,246,236,.92);backdrop-filter:blur(12px);
+  border-bottom:2px solid var(--border);
+  padding:0 2rem;display:flex;align-items:center;height:68px;
+}
+.logo{font-family:'Righteous',cursive;font-size:1.6rem;color:var(--orange);text-decoration:none;}
+
+/* Page centre */
+.center{
+  flex:1;display:flex;align-items:center;justify-content:center;
+  padding:2rem 1rem;position:relative;z-index:1;
+}
+
+/* Card wrapper */
+.auth-card{
+  background:var(--surface);border:2px solid var(--border);
+  border-radius:24px;padding:2.5rem 2rem;width:100%;max-width:420px;
+  box-shadow:var(--shadow);
+}
+
+/* Mode tabs: Customer / Staff */
+.mode-tabs{
+  display:flex;background:var(--bg);border:2px solid var(--border);
+  border-radius:99px;padding:.25rem;margin-bottom:2rem;gap:.25rem;
+}
+.mode-tab{
+  flex:1;text-align:center;padding:.5rem;border-radius:99px;
+  font-weight:700;font-size:.85rem;cursor:pointer;border:none;
+  background:transparent;color:var(--muted);transition:all .2s;
+}
+.mode-tab.active{background:var(--orange);color:#fff;}
+
+/* Sub-tabs: Login / Sign Up (customer only) */
+.sub-tabs{
+  display:flex;gap:.5rem;margin-bottom:1.5rem;
+}
+.sub-tab{
+  flex:1;text-align:center;padding:.45rem;border-radius:99px;
+  font-size:.82rem;font-weight:700;cursor:pointer;border:2px solid var(--border);
+  background:transparent;color:var(--muted);transition:all .2s;
+}
+.sub-tab.active{border-color:var(--orange);color:var(--orange);}
+
+/* Staff role selector */
+.role-row{
+  display:flex;gap:.5rem;margin-bottom:1rem;
+}
+.role-pill{
+  flex:1;text-align:center;padding:.5rem;border-radius:10px;
+  border:2px solid var(--border);font-size:.82rem;font-weight:700;
+  cursor:pointer;background:transparent;color:var(--muted);transition:all .2s;
+}
+.role-pill.active{border-color:var(--orange);background:rgba(255,107,43,.08);color:var(--orange);}
+
+.panel{display:none;}
+.panel.active{display:block;animation:fadeIn .2s ease;}
+@keyframes fadeIn{from{opacity:0;transform:translateY(4px)}to{opacity:1;transform:none}}
+
+.form-group{margin-bottom:.9rem;}
+.form-group label{
+  display:block;font-size:.75rem;font-weight:700;
+  color:var(--muted);text-transform:uppercase;letter-spacing:.05em;
+  margin-bottom:.35rem;
+}
+.form-group input{
+  width:100%;padding:.7rem 1rem;border:2px solid var(--border);
+  border-radius:12px;background:var(--bg);font-family:inherit;
+  font-size:.9rem;color:var(--dark);outline:none;transition:border-color .2s;
+}
+.form-group input:focus{border-color:var(--orange);}
+
+.error-msg{
+  color:var(--red);font-size:.78rem;display:none;margin-top:.3rem;
+}
+
+.flash{
+  background:rgba(255,71,87,.08);border:1px solid rgba(255,71,87,.3);
+  color:var(--red);border-radius:10px;padding:.65rem .9rem;
+  font-size:.85rem;margin-bottom:1rem;display:none;
+}
+.flash.show{display:block;}
+.flash-success{
+  background:rgba(46,204,113,.08);border-color:rgba(46,204,113,.3);color:var(--green);
+}
+
+.submit-btn{
+  width:100%;padding:.8rem;border:none;border-radius:99px;
+  font-family:'Righteous',cursive;font-size:1.05rem;
+  background:var(--orange);color:#fff;cursor:pointer;
+  transition:all .2s;margin-top:.25rem;
+}
+.submit-btn:hover{background:#e55a1f;transform:translateY(-2px);box-shadow:0 6px 20px rgba(255,107,43,.3);}
+
+.divider{
+  text-align:center;color:var(--muted);font-size:.78rem;
+  margin:1.1rem 0;position:relative;
+}
+.divider::before,.divider::after{
+  content:'';position:absolute;top:50%;width:42%;height:1px;background:var(--border);
+}
+.divider::before{left:0;} .divider::after{right:0;}
+
+.hint{
+  text-align:center;font-size:.8rem;color:var(--muted);margin-top:1.25rem;
+}
+.hint a{color:var(--orange);font-weight:700;text-decoration:none;}
+.hint a:hover{text-decoration:underline;}
+
+/* Demo credentials helper */
+.demo-box{
+  background:rgba(255,201,60,.1);border:1px solid rgba(255,201,60,.4);
+  border-radius:10px;padding:.7rem .9rem;font-size:.78rem;
+  color:var(--dark);margin-bottom:1rem;line-height:1.7;
+}
+.demo-box strong{color:#cc9600;}
+</style>
+</head>
+<body>
+
+<div class="floaters">
+  <div class="floater">🍟</div><div class="floater">🍫</div>
+  <div class="floater">🥜</div><div class="floater">🍬</div>
+  <div class="floater">🍿</div><div class="floater">🌶️</div>
+</div>
+
+<nav>
+  <a class="logo" href="/">ACE Mart</a>
+</nav>
+
+<div class="center">
+  <div class="auth-card">
+
+    <!-- Mode: Customer / Staff -->
+    <div class="mode-tabs">
+      <button class="mode-tab active" id="mode-customer" onclick="setMode('customer')">Shopper</button>
+      <button class="mode-tab" id="mode-staff" onclick="setMode('staff')">Staff</button>
+    </div>
+
+    <!-- Flash message -->
+    <div class="flash" id="flash-msg"></div>
+
+    <!-- ══ CUSTOMER PANEL ══ -->
+    <div class="panel active" id="panel-customer">
+
+      <!-- Login / Sign Up sub-tabs -->
+      <div class="sub-tabs">
+        <button class="sub-tab active" id="sub-login" onclick="setSubTab('login')">Sign In</button>
+        <button class="sub-tab" id="sub-signup" onclick="setSubTab('signup')">Create Account</button>
+      </div>
+
+      <!-- Demo hint -->
+      <div class="demo-box">
+        <strong>Demo account:</strong><br/>
+        Email: <code>alex@acemart.com</code> &nbsp; Password: <code>pw1234</code>
+      </div>
+
+      <!-- Customer Login -->
+      <div class="panel active" id="panel-login">
+        <div class="form-group">
+          <label>Email Address</label>
+          <input type="email" id="login-email" placeholder="you@example.com" autocomplete="email"/>
+          <span class="error-msg" id="err-login-email">Enter a valid email</span>
+        </div>
+        <div class="form-group">
+          <label>Password</label>
+          <input type="password" id="login-password" placeholder="••••••••" autocomplete="current-password"/>
+          <span class="error-msg" id="err-login-pw">Password cannot be blank</span>
+        </div>
+        <button class="submit-btn" onclick="doLogin()">Sign In →</button>
+        <div class="hint">
+          No account? <a href="#" onclick="setSubTab('signup');return false;">Create one free</a>
+        </div>
+      </div>
+
+      <!-- Customer Sign Up -->
+      <div class="panel" id="panel-signup">
+        <div class="form-group">
+          <label>Full Name</label>
+          <input type="text" id="su-name" placeholder="Jane Smith" autocomplete="name"/>
+          <span class="error-msg" id="err-su-name">Name cannot be blank</span>
+        </div>
+        <div class="form-group">
+          <label>Email Address</label>
+          <input type="email" id="su-email" placeholder="you@example.com" autocomplete="email"/>
+          <span class="error-msg" id="err-su-email">Enter a valid email</span>
+        </div>
+        <div class="form-group">
+          <label>Phone (optional)</label>
+          <input type="tel" id="su-phone" placeholder="555-0100" autocomplete="tel"/>
+        </div>
+        <div class="form-group">
+          <label>Delivery Address</label>
+          <input type="text" id="su-address" placeholder="10 Snack Street, Melbourne"/>
+          <span class="error-msg" id="err-su-address">Address cannot be blank</span>
+        </div>
+        <div class="form-group">
+          <label>Password</label>
+          <input type="password" id="su-password" placeholder="At least 6 characters" autocomplete="new-password"/>
+          <span class="error-msg" id="err-su-pw">Password must be at least 6 characters</span>
+        </div>
+        <button class="submit-btn" onclick="doSignup()">Create Account →</button>
+        <div class="hint">
+          Already have an account? <a href="#" onclick="setSubTab('login');return false;">Sign in</a>
+        </div>
+      </div>
+
+    </div><!-- /panel-customer -->
+
+    <!-- ══ STAFF PANEL ══ -->
+    <div class="panel" id="panel-staff">
+
+      <!-- Updated, clean Demo Credentials box listing both roles -->
+      <div class="demo-box">
+        <strong>Demo Credentials:</strong><br/>
+        👔 Manager: <code>sam@acemart.com</code> (admin123)<br/>
+        🏪 Store Staff: <code>lee@acemart.com</code> (staff123)
+      </div>
+
+      <div class="form-group">
+        <label>Staff Email</label>
+        <input type="email" id="staff-email" placeholder="staff@acemart.com" autocomplete="email"/>
+        <span class="error-msg" id="err-staff-email">Enter a valid email</span>
+      </div>
+      <div class="form-group">
+        <label>Password</label>
+        <input type="password" id="staff-password" placeholder="••••••••" autocomplete="current-password"/>
+        <span class="error-msg" id="err-staff-pw">Password cannot be blank</span>
+      </div>
+      <button class="submit-btn" onclick="doStaffLogin()">Staff Sign In →</button>
+
+    </div><!-- /panel-staff -->
+
+  </div><!-- /auth-card -->
+</div><!-- /center -->
+
+<script>
+let currentMode    = 'customer';
+let currentSubTab  = 'login';
+
+// ── Mode switching (Customer / Staff) ──
+function setMode(mode) {
+  currentMode = mode;
+  document.getElementById('panel-customer').classList.toggle('active', mode === 'customer');
+  document.getElementById('panel-staff').classList.toggle('active', mode === 'staff');
+  document.getElementById('mode-customer').classList.toggle('active', mode === 'customer');
+  document.getElementById('mode-staff').classList.toggle('active', mode === 'staff');
+  clearFlash();
+}
+
+// ── Sub-tab switching (Login / Sign Up) ──
+function setSubTab(tab) {
+  currentSubTab = tab;
+  document.getElementById('panel-login').classList.toggle('active', tab === 'login');
+  document.getElementById('panel-signup').classList.toggle('active', tab === 'signup');
+  document.getElementById('sub-login').classList.toggle('active', tab === 'login');
+  document.getElementById('sub-signup').classList.toggle('active', tab === 'signup');
+  clearFlash();
+}
+
+// ── Staff role selector ──
+function setRole(role) {
+  selectedRole = role;
+  document.getElementById('role-manager').classList.toggle('active', role === 'manager');
+  document.getElementById('role-staff').classList.toggle('active', role === 'staff');
+}
+
+// ── Flash messages ──
+function showFlash(msg, success=false) {
+  const el = document.getElementById('flash-msg');
+  el.textContent = msg;
+  el.className = 'flash show' + (success ? ' flash-success' : '');
+}
+function clearFlash() {
+  document.getElementById('flash-msg').className = 'flash';
+}
+
+function showErr(id, show) {
+  document.getElementById(id).style.display = show ? 'block' : 'none';
+}
+
+// ── Customer Login ──
+async function doLogin() {
+  const email = document.getElementById('login-email').value.trim();
+  const pw    = document.getElementById('login-password').value;
+
+  let valid = true;
+  showErr('err-login-email', !email || !email.includes('@')); if (!email || !email.includes('@')) valid = false;
+  showErr('err-login-pw',    !pw);                            if (!pw) valid = false;
+  if (!valid) return;
+
+  const res  = await fetch('/api/auth/login', {
+    method: 'POST', headers: {'Content-Type':'application/json'},
+    body: JSON.stringify({email, password: pw, role: 'customer'})
+  });
+  const data = await res.json();
+  if (data.success) {
+    showFlash('✅ Welcome back, ' + data.username + '!', true);
+    setTimeout(() => window.location.href = data.redirect || '/', 700);
+  } else {
+    showFlash('❌ ' + data.error);
+  }
+}
+
+// ── Customer Sign Up ──
+async function doSignup() {
+  const name    = document.getElementById('su-name').value.trim();
+  const email   = document.getElementById('su-email').value.trim();
+  const phone   = document.getElementById('su-phone').value.trim();
+  const address = document.getElementById('su-address').value.trim();
+  const pw      = document.getElementById('su-password').value;
+
+  let valid = true;
+  showErr('err-su-name',    !name);                           if (!name)    valid = false;
+  showErr('err-su-email',   !email || !email.includes('@'));  if (!email || !email.includes('@')) valid = false;
+  showErr('err-su-address', !address);                        if (!address) valid = false;
+  showErr('err-su-pw',      pw.length < 6);                   if (pw.length < 6) valid = false;
+  if (!valid) return;
+
+  const res  = await fetch('/api/auth/signup', {
+    method: 'POST', headers: {'Content-Type':'application/json'},
+    body: JSON.stringify({username: name, email, phone, address, password: pw})
+  });
+  const data = await res.json();
+  if (data.success) {
+    showFlash('🎉 Account created! Signing you in…', true);
+    setTimeout(() => window.location.href = data.redirect || '/', 800);
+  } else {
+    showFlash('❌ ' + data.error);
+  }
+}
+
+// ── Staff Login ──
+async function doStaffLogin() {
+  const email = document.getElementById('staff-email').value.trim();
+  const pw    = document.getElementById('staff-password').value;
+
+  let valid = true;
+  showErr('err-staff-email', !email || !email.includes('@')); if (!email || !email.includes('@')) valid = false;
+  showErr('err-staff-pw',    !pw);                            if (!pw) valid = false;
+  if (!valid) return;
+
+  const res  = await fetch('/api/auth/login', {
+    method: 'POST', 
+    headers: {'Content-Type':'application/json'},
+    body: JSON.stringify({email, password: pw, role: 'admin'}) // <-- Simplified payload
+  });
+  const data = await res.json();
+  if (data.success) {
+    showFlash('✅ Welcome, ' + data.username + '!', true);
+    setTimeout(() => window.location.href = data.redirect || '/admin', 700);
+  } else {
+    showFlash('❌ ' + data.error);
+  }
+}
+
+// Isolate the login view based on the URL query mode (Shopper vs Staff)
+const urlParams = new URLSearchParams(window.location.search);
+const modeParam = urlParams.get('mode');
+const modeTabs  = document.querySelector('.mode-tabs');
+
+if (modeParam === 'staff' || modeParam === 'admin') {
+  // Lock page to Staff Portal view
+  setMode('staff');
+  if (modeTabs) modeTabs.style.display = 'none'; // Hide switching capability
+  document.getElementById('staff-email').focus();
+} else {
+  // Lock page to Shopper Portal view
+  setMode('customer');
+  if (modeTabs) modeTabs.style.display = 'none'; // Hide switching capability
+  document.getElementById('login-email').focus();
+}
+
+</script>
+</body>
+</html>

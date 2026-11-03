@@ -1,0 +1,1943 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1"/>
+<title>Admin Panel — ACE Mart</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.js"></script>
+<link rel="preconnect" href="https://fonts.googleapis.com"/>
+<link rel="preconnect" href="https://fonts.googleapis.com"/>
+<link href="https://fonts.googleapis.com/css2?family=Righteous&family=DM+Sans:ital,wght@0,300;0,400;0,500;0,700;1,400&display=swap" rel="stylesheet"/>
+<style>
+:root {
+  --bg:#fdf6ec; --surface:#fff9f2; --orange:#ff6b2b; --yellow:#ffc93c;
+  --green:#2ecc71; --red:#ff4757; --dark:#1a1208; --muted:#8b7355;
+  --border:#f0dfc0; --radius:18px; --shadow:0 4px 24px rgba(255,107,43,.12);
+}
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+body{background:var(--bg);color:var(--dark);font-family:'DM Sans',sans-serif;min-height:100vh;}
+
+nav{
+  position:sticky;top:0;z-index:100;
+  background:rgba(253,246,236,.92);backdrop-filter:blur(12px);
+  border-bottom:2px solid var(--border);
+  padding:0 2rem;display:flex;align-items:center;gap:1rem;height:68px;
+}
+.logo{font-family:'Righteous',cursive;font-size:1.6rem;color:var(--orange);text-decoration:none;}
+.admin-badge{
+  background:rgba(255,107,43,.12);color:var(--orange);
+  font-size:.72rem;font-weight:700;letter-spacing:.08em;text-transform:uppercase;
+  padding:.3rem .75rem;border-radius:99px;
+}
+.nav-right{margin-left:auto;display:flex;align-items:center;gap:.75rem;}
+.nav-link{
+  color:var(--muted);font-weight:500;text-decoration:none;font-size:.88rem;
+  padding:.5rem .75rem;border-radius:99px;transition:all .2s;
+}
+.nav-link:hover{background:var(--border);color:var(--dark);}
+
+/* Layout */
+.page{max-width:1100px;margin:0 auto;padding:2rem 1.5rem;}
+.page-title{font-family:'Righteous',cursive;font-size:2rem;margin-bottom:.2rem;}
+.page-sub{color:var(--muted);font-size:.9rem;margin-bottom:2rem;}
+
+/* Tabs */
+.tabs{display:flex;gap:.5rem;margin-bottom:2rem;flex-wrap:wrap;}
+.tab{
+  padding:.5rem 1.25rem;border-radius:99px;
+  border:2px solid var(--border);background:var(--surface);
+  color:var(--muted);font-size:.85rem;font-weight:600;cursor:pointer;
+  transition:all .2s;
+}
+.tab:hover,.tab.active{
+  border-color:var(--orange);background:var(--orange);color:#fff;
+}
+
+.tab-panel{display:none;}
+.tab-panel.active{display:block;animation:fadeIn .25s ease;}
+@keyframes fadeIn{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:none}}
+
+/* Stats row */
+.stats{display:grid;grid-template-columns:repeat(auto-fill,minmax(170px,1fr));gap:1rem;margin-bottom:2rem;}
+.stat-card{
+  background:var(--surface);border:2px solid var(--border);
+  border-radius:var(--radius);padding:1.25rem;text-align:center;
+}
+.stat-num{font-family:'Righteous',cursive;font-size:2.2rem;color:var(--orange);}
+.stat-label{font-size:.78rem;color:var(--muted);margin-top:.2rem;font-weight:600;text-transform:uppercase;letter-spacing:.06em;}
+
+/* Cards */
+.card{
+  background:var(--surface);border:2px solid var(--border);
+  border-radius:var(--radius);padding:1.25rem 1.5rem;margin-bottom:.75rem;
+}
+.card-title{font-family:'Righteous',cursive;font-size:1.1rem;margin-bottom:1rem;
+  display:flex;align-items:center;gap:.5rem;}
+
+/* Table */
+.tbl{width:100%;border-collapse:collapse;font-size:.85rem;}
+.tbl th{
+  text-align:left;padding:.6rem .75rem;
+  border-bottom:2px solid var(--border);
+  font-size:.72rem;font-weight:700;letter-spacing:.08em;text-transform:uppercase;
+  color:var(--muted);
+}
+.tbl td{padding:.7rem .75rem;border-bottom:1px solid var(--border);vertical-align:middle;}
+.tbl tr:last-child td{border-bottom:none;}
+.tbl tr:hover td{background:var(--bg);}
+
+/* Badges */
+.badge{
+  display:inline-flex;align-items:center;gap:.3rem;
+  font-size:.7rem;font-weight:700;letter-spacing:.06em;text-transform:uppercase;
+  padding:.25rem .65rem;border-radius:99px;
+}
+.badge-green {background:rgba(46,204,113,.12);color:var(--green);}
+.badge-red   {background:rgba(255,71,87,.12);color:var(--red);}
+.badge-yellow{background:rgba(255,201,60,.15);color:#cc9600;}
+.badge-purple{background:rgba(156,90,255,.12);color:#9c5aff;}
+.badge-muted {background:rgba(139,115,85,.1);color:var(--muted);}
+
+/* Forms */
+.form-grid{display:grid;grid-template-columns:1fr 1fr;gap:.75rem;}
+.form-group{display:flex;flex-direction:column;gap:.35rem;}
+.form-group.full{grid-column:1/-1;}
+.form-group label{font-size:.78rem;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.05em;}
+.form-group input,.form-group select,.form-group textarea{
+  padding:.6rem .9rem;border:2px solid var(--border);border-radius:10px;
+  background:var(--bg);font-family:inherit;font-size:.9rem;color:var(--dark);
+  outline:none;transition:border-color .2s;
+}
+.form-group input:focus,.form-group select:focus,.form-group textarea:focus{border-color:var(--orange);}
+.form-group textarea{resize:vertical;min-height:80px;}
+.error-msg{color:var(--red);font-size:.78rem;display:none;margin-top:.25rem;}
+
+.btn{
+  display:inline-flex;align-items:center;gap:.4rem;
+  padding:.6rem 1.25rem;border-radius:99px;border:none;
+  font-family:inherit;font-size:.85rem;font-weight:700;cursor:pointer;
+  transition:all .2s;
+}
+.btn-primary{background:var(--orange);color:#fff;}
+.btn-primary:hover{background:#e55a1f;transform:translateY(-1px);}
+.btn-sm{padding:.35rem .85rem;font-size:.78rem;}
+.btn-outline{background:transparent;border:2px solid var(--border);color:var(--muted);}
+.btn-outline:hover{border-color:var(--orange);color:var(--orange);}
+.btn-danger{background:rgba(255,71,87,.1);color:var(--red);border:2px solid rgba(255,71,87,.2);}
+.btn-danger:hover{background:var(--red);color:#fff;}
+
+/* Report output */
+.report-box{
+  background:var(--bg);border:2px solid var(--border);border-radius:12px;
+  padding:1.25rem;font-family:monospace;font-size:.8rem;
+  white-space:pre-wrap;line-height:1.6;max-height:400px;overflow-y:auto;
+  display:none;margin-top:1rem;
+}
+.report-box.show{display:block;animation:fadeIn .3s ease;}
+
+/* Toast */
+.toast{
+  position:fixed;bottom:2rem;left:50%;transform:translateX(-50%) translateY(80px);
+  background:var(--dark);color:#fff;border-radius:99px;
+  padding:.75rem 1.5rem;font-weight:600;font-size:.9rem;
+  transition:transform .35s cubic-bezier(.34,1.56,.64,1);
+  z-index:999;pointer-events:none;white-space:nowrap;
+}
+.toast.show{transform:translateX(-50%) translateY(0);}
+
+/* Restock inline input */
+.restock-row{display:flex;gap:.5rem;align-items:center;}
+.restock-row input{
+  width:70px;padding:.35rem .6rem;border:2px solid var(--border);
+  border-radius:8px;font-size:.85rem;text-align:center;
+  background:var(--bg);font-family:inherit;outline:none;
+}
+.restock-row input:focus{border-color:var(--orange);}
+
+.stars{color:var(--yellow);font-size:.95rem;}
+
+/* Order Stage Sub-filters */
+.filter-pills {
+  display: flex; gap: .5rem; margin-bottom: 1.25rem; flex-wrap: wrap;
+  border-bottom: 1px dashed var(--border); padding-bottom: 1rem;
+}
+.filter-pill {
+  padding: .45rem 1rem; border-radius: 99px;
+  border: 2px solid var(--border); background: var(--surface);
+  color: var(--muted); font-size: .8rem; font-weight: 700;
+  cursor: pointer; transition: all .15s; display: flex; align-items: center; gap: .3rem;
+}
+.filter-pill:hover, .filter-pill.active {
+  border-color: var(--orange); background: var(--orange); color: #fff;
+  transform: translateY(-1px);
+}
+
+/* Print Media Styles: Hides layout elements during PDF/Print generation */
+@media print {
+  body {
+    background: #fff !important;
+    color: #000 !important;
+  }
+  nav, .tabs, .stats, .card-title, p, button, .btn, .filter-pills, #report-actions-bar {
+    display: none !important; /* Hide all navigation, buttons, and side-tabs */
+  }
+  .tab-panel {
+    display: none !important;
+  }
+  .tab-panel#tab-reports {
+    display: block !important; /* Force only the active report to render */
+  }
+  .card {
+    border: none !important;
+    box-shadow: none !important;
+    padding: 0 !important;
+    background: transparent !important;
+  }
+  #report-container {
+    display: block !important;
+    border: none !important;
+    box-shadow: none !important;
+    padding: 0 !important;
+    background: #fff !important;
+  }
+}
+
+</style>
+</head>
+<body>
+
+<nav>
+  <a class="logo" href="/">ACE Mart</a>
+  <span class="admin-badge">Admin Panel</span>
+  <div class="nav-right">
+    <a class="nav-link" href="/" style="font-weight:700;color:var(--orange);border:2px solid var(--border);padding:.5rem 1rem;border-radius:99px;">Customer View</a>
+    <a class="nav-link" href="/profile">Profile</a>
+    <!-- Real-time Context-Aware Notification Bell -->
+    <div style="position:relative;cursor:pointer;margin-right:1rem;display:inline-flex;align-items:center;" id="bell-wrapper">
+      <span onclick="toggleAlertsDropdown(event)" style="display:inline-flex;align-items:center;">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="color:var(--muted);"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"></path><path d="M13.73 21a2 2 0 0 1-3.46 0"></path></svg>
+      </span>
+      <span id="admin-notif-badge" style="display:none;position:absolute;top:-4px;right:-6px;background:var(--red);color:#fff;font-size:.65rem;font-weight:700;border-radius:99px;padding:.1rem .35rem;min-width:18px;text-align:center;" onclick="toggleAlertsDropdown(event)">0</span>
+      
+      <!-- Notification Dropdown Menu -->
+      <div id="admin-notif-dropdown" style="display:none;position:absolute;top:38px;right:0;width:300px;background:var(--surface);border:2px solid var(--border);border-radius:12px;box-shadow:var(--shadow);z-index:150;padding:.75rem 1rem;">
+        <div style="font-family:'Righteous',cursive;font-size:.95rem;margin-bottom:.5rem;display:flex;justify-content:space-between;align-items:center;">
+          <span id="notif-title-lbl">Notifications</span>
+          <button style="background:none;border:none;color:var(--orange);font-size:.72rem;font-weight:700;cursor:pointer;" onclick="markAlertsAsRead(event)">Mark all read</button>
+        </div>
+        <div id="admin-notif-list" style="max-height:220px;overflow-y:auto;font-size:.82rem;display:flex;flex-direction:column;gap:.35rem;">
+          <div style="color:var(--muted);text-align:center;padding:1rem 0;">No active notifications.</div>
+        </div>
+      </div>
+    </div>
+    <a class="nav-link" href="/logout" style="color:var(--red);">Sign Out</a> <!-- Added Clean Sign Out -->
+  </div>
+</nav>
+
+<div class="page">
+  <div class="page-title">Admin Panel ⚙️</div>
+  <div class="page-sub">Welcome, {{ admin.username }} &nbsp;·&nbsp; {{ admin.role }}</div>
+
+  <!-- Stats Row -->
+  <div class="stats">
+    <div class="stat-card">
+      <div class="stat-num">{{ active_products_count }}</div>
+      <div class="stat-label">Active Products</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-num">{{ ongoing_orders_count }}</div>
+      <div class="stat-label">Ongoing Orders</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-num">{{ ongoing_tickets_count }}</div>
+      <div class="stat-label">Ongoing Tickets</div>
+    </div>
+    <div class="stat-card" style="position:relative;">
+      <div class="stat-num">{{ new_reviews_count }}</div>
+      <div class="stat-label" style="display:flex; align-items:center; justify-content:center; gap:.25rem;">
+        New Reviews
+        <!-- Circular Outline Info Icon -->
+        <span style="cursor:pointer; display:inline-flex; align-items:center; justify-content:center; width:14px; height:14px; font-size:.6rem; font-weight:700; font-family:monospace; color:var(--muted);" 
+              onclick="openReviewsInfoModal(event)" 
+              title="How is this measured?">🛈</span>
+      </div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-num">{{ out_of_stock_count }}</div>
+      <div class="stat-label">Out of Stock</div>
+    </div>
+  </div>
+
+  <!-- New Reviews Explanation Overlay Modal -->
+    <div id="reviews-info-modal" style="display:none;position:fixed;inset:0;background:rgba(26,18,8,.5);z-index:200;align-items:center;justify-content:center;">
+      <div class="card" style="max-width:400px;width:90%;margin:0;animation:popIn .3s cubic-bezier(.34,1.56,.64,1);">
+        <div class="card-title">ℹ️ New Reviews Metric</div>
+        <p style="font-size:.85rem;line-height:1.6;color:var(--dark);margin-bottom:1rem;">
+          The <strong>New Reviews</strong> card displays the count of customer product evaluations and ratings submitted within the **last 7 days**.
+        </p>
+        <p style="font-size:.82rem;color:var(--muted);line-height:1.5;margin-bottom:1.25rem;">
+          💡 <strong>Purpose:</strong> This helps store managers and staff monitor recent customer satisfaction trends and keep track of newly submitted feedback that may require operational review.
+        </p>
+        <button class="btn btn-primary" onclick="closeReviewsInfoModal()">Close</button>
+      </div>
+    </div>
+
+  <!-- Tabs -->
+  <!-- Tabs (Exposed to both roles) -->
+  <div class="tabs">
+    <button class="tab active" onclick="switchTab('products',this)">📦 Products</button>
+    <button class="tab" onclick="switchTab('orders',this)">🧾 Orders</button>
+    <button class="tab" onclick="switchTab('tickets',this)">🎫 Support Tickets</button>
+    <button class="tab" onclick="switchTab('feedback',this)">⭐ Feedback</button>
+    <button class="tab" onclick="switchTab('reports',this)">📊 Reports</button>
+  </div>
+
+  <!-- ── PRODUCTS TAB ── -->
+  <div class="tab-panel active" id="tab-products">
+
+    <!-- ── 1. OPERATIONAL CONTROL FOR STORE STAFF ── -->
+    {% if admin.role == 'staff' %}
+      <!-- Card A: Add Product Form -->
+      <div class="card" style="margin-bottom:1.5rem;">
+        <div class="card-title">➕ Add New Product</div>
+        <div class="form-grid" id="add-product-form">
+          <div class="form-group">
+            <label>Product Name *</label>
+            <input type="text" id="p-name" placeholder="e.g. Matcha Kit Kats"/>
+            <span class="error-msg" id="err-name">Name cannot be blank</span>
+          </div>
+          <div class="form-group">
+            <label>Emoji / Icon</label>
+            <input type="text" id="p-emoji" placeholder="🍫" maxlength="4"/>
+          </div>
+          <div class="form-group full">
+            <label>Description</label>
+            <input type="text" id="p-desc" placeholder="Short product description"/>
+          </div>
+          <div class="form-group">
+            <label>Price (AUD) *</label>
+            <input type="number" id="p-price" placeholder="4.99" min="0.01" step="0.01"/>
+            <span class="error-msg" id="err-price">Price must be greater than 0</span>
+          </div>
+          <div class="form-group">
+            <label>Stock Quantity *</label>
+            <input type="number" id="p-stock" placeholder="50" min="0"/>
+            <span class="error-msg" id="err-stock">Stock must be 0 or more</span>
+          </div>
+          <div class="form-group">
+            <label>Category *</label>
+            <select id="p-category">
+              <option value="">— Select category —</option>
+              {% for cat in categories %}
+                {% if cat.is_active %}
+                <option value="{{ cat.category_id }}">{{ cat.name }}</option>
+                {% endif %}
+              {% endfor %}
+            </select>
+            <span class="error-msg" id="err-cat">Please select a category</span>
+          </div>
+          <div class="form-group" style="align-self:end;">
+            <button class="btn btn-primary" onclick="addProduct()">➕ Add Product</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- Card B: Manage Categories (Editable) -->
+      <div class="card" style="margin-bottom:1.5rem;">
+        <div class="card-title">📁 Manage Categories</div>
+        
+        <div style="display:flex;gap:.5rem;margin-bottom:1.25rem;align-items:end;flex-wrap:wrap;">
+          <div class="form-group" style="flex:1;min-width:200px;margin-bottom:0;">
+            <label>New Category Name *</label>
+            <input type="text" id="cat-name-input" placeholder="e.g. Beverages"/>
+          </div>
+          <div class="form-group" style="flex:1.5;min-width:250px;margin-bottom:0;">
+            <label>Category Description</label>
+            <input type="text" id="cat-desc-input" placeholder="Optional description…"/>
+          </div>
+          <button class="btn btn-primary" onclick="addCategory()">➕ Add Category</button>
+        </div>
+
+        <table class="tbl" id="category-table">
+          <thead>
+            <tr>
+              <th>Category ID</th>
+              <th>Name</th>
+              <th>Status</th>
+              <th>Action</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for cat in categories %}
+            <tr id="cat-row-{{ cat.category_id }}">
+              <td style="font-family:monospace;font-size:.78rem;">{{ cat.category_id }}</td>
+              <td>
+                <div style="display:flex;gap:.5rem;align-items:center;">
+                  <input type="text" id="cat-rename-{{ cat.category_id }}" value="{{ cat.name }}" style="padding:.25rem .5rem;font-size:.85rem;border:2px solid var(--border);border-radius:6px;width:160px;outline:none;"/>
+                  <button class="btn btn-sm btn-outline" onclick="renameCategory('{{ cat.category_id }}')">Rename</button>
+                </div>
+              </td>
+              <td id="cat-status-{{ cat.category_id }}">
+                {% if cat.is_active %}
+                  <span class="badge badge-green">Active</span>
+                {% else %}
+                  <span class="badge badge-muted">Inactive</span>
+                {% endif %}
+              </td>
+              <td>
+                <button class="btn btn-sm {% if cat.is_active %}btn-danger{% else %}btn-primary{% endif %}"
+                        id="cat-toggle-btn-{{ cat.category_id }}"
+                        onclick="toggleCategoryActive('{{ cat.category_id }}')">
+                  {% if cat.is_active %}Deactivate{% else %}Activate{% endif %}
+                </button>
+              </td>
+            </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+      
+    <!-- ── 2. READ-ONLY VIEW DIRECTORY FOR THE MANAGER ── -->
+    {% else %}
+      <!-- Card C: Category Directory -->
+      <div class="card" style="margin-bottom:1.5rem;">
+        <div class="card-title">📁 Category Directory</div>
+        <p style="color:var(--muted);font-size:.82rem;margin-bottom:1rem;">
+          Browsing active and deactivated classification groups in your product catalog.
+        </p>
+        <table class="tbl" style="font-size:.8rem;">
+          <thead>
+            <tr>
+              <th>Category ID</th>
+              <th>Category Name</th>
+              <th>Description</th>
+              <th>Products Contained</th>
+              <th>Status</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for cat in categories %}
+            <tr>
+              <td style="font-family:monospace;font-size:.78rem;">{{ cat.category_id }}</td>
+              <td><strong>{{ cat.name }}</strong></td>
+              <td style="color:var(--muted);">{{ cat.description if cat.description else 'No description provided' }}</td>
+              <td><strong>{{ cat.products|length }}</strong></td>
+              <td>
+                {% if cat.is_active %}
+                  <span class="badge badge-green">Active</span>
+                {% else %}
+                  <span class="badge badge-muted">Inactive</span>
+                {% endif %}
+              </td>
+            </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    {% endif %}
+
+    <!-- Product List Card -->
+    <div class="card">
+        <div class="card-title">📦 All Products ({{ products|length }})</div>
+        <table class="tbl" id="product-table">
+          <thead>
+            <tr>
+              <th>Product</th>
+              <th>Category</th>
+              <th>Price</th>
+              <th>Stock</th>
+              <th>Status</th>
+              <th>Visibility</th>
+              <!-- Completely wrap these two headers in the Staff check -->
+              {% if admin.role == 'staff' %}
+              <th>Restock</th>
+              <th>Action</th>
+              {% endif %}
+            </tr>
+          </thead>
+        <tbody>
+          {% for p in products %}
+          <tr id="row-{{ p.product_id }}">
+            <td>
+              <strong>{{ p.image_url }} {{ p.name }}</strong>
+              <div style="font-size:.75rem;color:var(--muted);">{{ p.product_id }}</div>
+            </td>
+            <td>
+              {% for cat in categories %}
+                {% if cat.category_id == p.category_id %}{{ cat.name }}{% endif %}
+              {% endfor %}
+            </td>
+            <td>${{ "%.2f"|format(p.price) }}</td>
+            <td id="stock-{{ p.product_id }}"><strong>{{ p.stock_quantity }}</strong></td>
+            <td id="status-{{ p.product_id }}">
+              {% if p.stock_quantity == 0 %}
+                <span class="badge badge-red">Out of Stock</span>
+              {% elif p.stock_quantity <= 5 %}
+                <span class="badge badge-yellow">Low Stock</span>
+              {% else %}
+                <span class="badge badge-green">In Stock</span>
+              {% endif %}
+            </td>
+            
+            <!-- Visibility Status Badge -->
+            <td id="visibility-{{ p.product_id }}">
+              {% if p.is_active %}
+                <span class="badge badge-green">Visible</span>
+              {% else %}
+                <span class="badge badge-muted">Hidden</span>
+              {% endif %}
+            </td>
+            
+            <!-- Completely wrap the final two TDs inside the Staff check -->
+            {% if admin.role == 'staff' %}
+            <td>
+              <div class="restock-row">
+                <input type="number" id="rs-{{ p.product_id }}" value="10" min="1"/>
+                <button class="btn btn-sm btn-outline" onclick="restock('{{ p.product_id }}')">+Stock</button>
+              </div>
+            </td>
+            <td>
+              <div style="display:flex; gap:.35rem;">
+                <button class="btn btn-sm {% if p.is_active %}btn-outline{% else %}btn-primary{% endif %}" 
+                        style="font-size: .75rem;" 
+                        id="toggle-btn-{{ p.product_id }}" 
+                        onclick="toggleProductActive('{{ p.product_id }}')">
+                  {% if p.is_active %}Hide{% else %}Show{% endif %}
+                </button>
+                <button class="btn btn-sm btn-danger" style="font-size: .75rem;" onclick="removeProduct('{{ p.product_id }}', this)">Delete</button>
+              </div>
+            </td>
+            {% endif %}
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- ── ORDERS TAB (MANUAL STATE TRANSITIONS) ── -->
+  <div class="tab-panel" id="tab-orders">
+    <div class="card">
+      <div class="card-title">🧾 All Orders ({{ orders|length }})</div>
+      
+      <!-- Stage Filter Pills -->
+      <div class="filter-pills">
+        <button class="filter-pill active" onclick="filterOrders('all', this)">🌟 All</button>
+        <button class="filter-pill" onclick="filterOrders('pending', this)">🕐 Pending</button>
+        <button class="filter-pill" onclick="filterOrders('processing', this)">⏳ Processing</button>
+        <button class="filter-pill" onclick="filterOrders('shipped', this)">🚚 Shipped</button>
+        <button class="filter-pill" onclick="filterOrders('delivered', this)">✅ Delivered</button>
+        <button class="filter-pill" onclick="filterOrders('cancelled', this)">❌ Cancelled</button>
+        <button class="filter-pill" onclick="filterOrders('refunded', this)">💰 Refunded</button>
+      </div>
+
+      {% if orders %}
+      <table class="tbl">
+        <thead>
+          <tr>
+            <th>Order ID</th>
+            <th>Customer</th>
+            <th>Items</th>
+            <th>Total</th>
+            <th>Status</th>
+            <th>Paid</th>
+            <th>Date</th>
+            {% if admin.role == 'staff' %}
+            <th>Actions</th>  <!-- Staff Only -->
+            {% endif %}
+          </tr>
+        </thead>
+        <tbody>
+          {% for o in orders|reverse %}
+          <!-- Added row class and dataset status -->
+          <tr class="order-row" data-status="{{ o.status }}">
+            <td style="font-family:monospace;font-size:.78rem;">#{{ o.order_id[:8].upper() }}</td>
+            <td>{{ o.customer.username }}</td>
+            <td>
+              {% for item in o.items %}
+              <span style="font-size:.78rem;">{{ item.product.image_url }}×{{ item.quantity }}</span>
+              {% endfor %}
+            </td>
+            <!-- Render the grand total including the shipping fee if subtotal is under $25 -->
+            <td><strong>${{ "%.2f"|format(o.total_amount + (0 if o.total_amount >= 25 else 3.99)) }}</strong></td>
+            <td>
+              <span class="badge
+                {% if o.status == 'delivered' %}badge-green
+                {% elif o.status == 'shipped' %}badge-purple
+                {% elif o.status == 'processing' %}badge-yellow
+                {% else %}badge-muted{% endif %}">
+                {{ o.status }}
+              </span>
+            </td>
+            <td>
+              {% if o.is_paid() %}
+                <span class="badge badge-green">✓ Paid</span>
+              {% else %}
+                <span class="badge badge-red">Unpaid</span>
+              {% endif %}
+            </td>
+            <td style="font-size:.78rem;color:var(--muted);">{{ o.placed_at.strftime('%d %b %Y') }}</td>
+            
+            <!-- Manual State Transitions Column -->
+             {% if admin.role == 'staff' %}
+            <td>
+              {% if o.status == 'pending' %}
+                <button class="btn btn-sm btn-primary" onclick="acceptOrder('{{ o.order_id }}')">💼 Accept</button>
+                <button class="btn btn-sm btn-danger" onclick="cancelOrder('{{ o.order_id }}')">Cancel</button>
+              {% elif o.status == 'processing' %}
+                <button class="btn btn-sm btn-primary" onclick="openShipModal('{{ o.order_id }}')">🚚 Ship</button>
+                <button class="btn btn-sm btn-danger" onclick="cancelOrder('{{ o.order_id }}')">Cancel</button>
+              {% elif o.status == 'shipped' %}
+                <button class="btn btn-sm btn-primary" style="background:var(--green);" onclick="deliverOrder('{{ o.order_id }}')">✅ Deliver</button>
+              {% elif o.status == 'cancelled' and o.is_paid() %}
+                <button class="btn btn-sm btn-danger" style="background:var(--red); color:#fff;" onclick="refundOrder('{{ o.order_id }}')">💰 Refund</button>
+              {% else %}
+                <span style="color:var(--muted);font-size:.78rem;">Complete</span>
+              {% endif %}
+            </td>
+            {% endif %}
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+      {% else %}
+      <p style="color:var(--muted);text-align:center;padding:2rem;">No orders yet.</p>
+      {% endif %}
+    </div>
+
+    <!-- Manual Shipping details modal -->
+    <div id="ship-modal" style="display:none;position:fixed;inset:0;background:rgba(26,18,8,.5);z-index:200;align-items:center;justify-content:center;">
+      <div class="card" style="max-width:400px;width:90%;margin:0;">
+        <div class="card-title">🚚 Enter Shipping Details</div>
+        <input type="hidden" id="ship-order-id"/>
+        <div class="form-group" style="margin-bottom:1rem;">
+          <label>Carrier Name *</label>
+          <input type="text" id="ship-carrier" value="SnackExpress"/>
+        </div>
+        <div class="form-group" style="margin-bottom:1.25rem;">
+          <label>Tracking Number *</label>
+          <input type="text" id="ship-tracking" placeholder="e.g. SE-983A7B"/>
+          <span class="error-msg" id="err-ship-tracking">Tracking number is required</span>
+        </div>
+        <div style="display:flex;gap:.75rem;">
+          <button class="btn btn-primary" onclick="submitShip()">🚚 Ship Package</button>
+          <button class="btn btn-outline" onclick="closeShipModal()">Cancel</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Turnover Explanation Overlay Modal -->
+    <div id="turnover-info-modal" style="display:none;position:fixed;inset:0;background:rgba(26,18,8,.5);z-index:200;align-items:center;justify-content:center;">
+      <div class="card" style="max-width:440px;width:90%;margin:0;animation:popIn .3s cubic-bezier(.34,1.56,.64,1);">
+        <div class="card-title">ℹ️ Inventory Turnover Measurement</div>
+        <p style="font-size:.85rem;line-height:1.6;color:var(--dark);margin-bottom:1rem;">
+          The <strong>Inventory Turnover Rate</strong> measures stock velocity—how efficiently products are sold and replaced relative to average stock levels.
+        </p>
+        <div style="background:var(--bg);padding:1rem;border-radius:10px;font-family:monospace;font-size:.78rem;margin-bottom:1rem;line-height:1.5;border:1px solid var(--border);">
+          <strong>Formula:</strong><br/>
+          Turnover Rate = Units Sold ÷ Average Inventory<br/><br/>
+          <strong>Where:</strong><br/>
+          Average Inventory = [Current Stock + (Current Stock + Units Sold)] ÷ 2
+        </div>
+        <p style="font-size:.82rem;color:var(--muted);line-height:1.5;margin-bottom:1.25rem;">
+          💡 <strong>Interpretation:</strong> A higher ratio indicates strong sales velocity and minimal storage holding costs, while a lower ratio suggests overstocking or slow-moving items.
+        </p>
+        <button class="btn btn-primary" onclick="closeTurnoverInfoModal()">Close</button>
+      </div>
+    </div>
+
+  <!-- ── SUPPORT TICKETS TAB ── -->
+  <div class="tab-panel" id="tab-tickets">
+    <div class="card">
+      <div class="card-title">🎫 Support Tickets ({{ tickets|length }})</div>
+      {% if tickets %}
+      <table class="tbl">
+        <thead>
+          <tr>
+            <th>Order ID</th>
+            <th>Customer</th>
+            <th>Subject</th>
+            <th>Status</th>
+            <th>Date</th>
+            <!-- Exclude Actions header for Managers -->
+            {% if admin.role == 'staff' %}
+            <th>Actions</th>
+            {% endif %}
+          </tr>
+        </thead>
+        <tbody>
+          {% for t in tickets|reverse %}
+          <tr>
+            <td style="font-family:monospace;font-size:.75rem;">{{ t.ticket_id[:8].upper() }}</td>
+            <td>{{ t.customer.username }}</td>
+            <td>
+              <strong>{{ t.subject }}</strong>
+              <div style="font-size:.75rem;color:var(--muted);">{{ t.description[:80] }}{% if t.description|length > 80 %}…{% endif %}</div>
+              {% if t.resolution_notes %}
+              <div style="font-size:.75rem;color:var(--green);margin-top:.2rem;">✓ {{ t.resolution_notes }}</div>
+              {% endif %}
+            </td>
+            <td>
+              <span class="badge
+                {% if t.status == 'resolved' %}badge-green
+                {% elif t.status == 'in_progress' %}badge-yellow
+                {% elif t.status == 'closed' %}badge-muted
+                {% else %}badge-red{% endif %}"
+                id="ticket-status-{{ t.ticket_id }}">
+                {{ t.status }}
+              </span>
+            </td>
+            
+            <td style="font-size:.78rem;color:var(--muted);">{{ t.created_at.strftime('%d %b %Y') }}</td>
+            
+            <!-- Completely wrap the entire TD tag inside the Staff check -->
+            {% if admin.role == 'staff' %}
+            <td>
+              {% if t.status in ['open', 'in_progress'] %}
+                <button class="btn btn-sm btn-primary" onclick="openResolve('{{ t.ticket_id }}')">Resolve</button>
+              {% else %}
+                <span style="color:var(--muted);font-size:.78rem;">Complete</span>
+              {% endif %}
+            </td>
+            {% endif %}
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+      {% else %}
+      <p style="color:var(--muted);text-align:center;padding:2rem;">No support tickets.</p>
+      {% endif %}
+    </div>
+
+    <!-- Resolve Modal -->
+    <div id="resolve-modal" style="display:none;position:fixed;inset:0;background:rgba(26,18,8,.5);z-index:200;align-items:center;justify-content:center;">
+      <div class="card" style="max-width:440px;width:90%;margin:0;">
+        <div class="card-title">✅ Resolve Ticket</div>
+        <input type="hidden" id="resolve-ticket-id"/>
+        <div class="form-group" style="margin-bottom:1rem;">
+          <label>Resolution Notes *</label>
+          <textarea id="resolve-notes" placeholder="Describe the resolution…"></textarea>
+          <span class="error-msg" id="err-resolve">Notes cannot be blank</span>
+        </div>
+        <div style="display:flex;gap:.75rem;">
+          <button class="btn btn-primary" onclick="submitResolve()">✓ Resolve</button>
+          <button class="btn btn-outline" onclick="closeResolve()">Cancel</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ── FEEDBACK TAB ── -->
+  <div class="tab-panel" id="tab-feedback">
+    <div class="card">
+      <div class="card-title">⭐ Customer Feedback ({{ feedbacks|length }})</div>
+      {% if feedbacks %}
+      <table class="tbl">
+        <thead>
+          <tr><th>Customer</th><th>Order</th><th>Rating</th><th>Comment</th><th>Date</th></tr>
+        </thead>
+        <tbody>
+          {% for f in feedbacks %}
+          <tr>
+            <td>{{ f.customer.username }}</td> <!-- Traverse customer object -->
+            <td style="font-family:monospace;font-size:.78rem;">#{{ f.order.order_id[:8].upper() }}</td> <!-- Traverse order object -->
+            <td>
+              <div class="stars">
+                {% for i in range(f.rating) %}★{% endfor %}{% for i in range(5-f.rating) %}☆{% endfor %}
+              </div>
+              <div style="font-size:.72rem;color:var(--muted);">{{ f.rating }}/5</div>
+            </td>
+            <td style="font-size:.85rem;font-style:italic;">"{{ f.comment }}"</td>
+            <td style="font-size:.78rem;color:var(--muted);">{{ f.submitted_at.strftime('%Y-%m-%d') }}</td> <!-- Use datetime formatting -->
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+      {% else %}
+      <p style="color:var(--muted);text-align:center;padding:2rem;">No feedback yet.</p>
+      {% endif %}
+    </div>
+  </div>
+
+  <!-- ── REPORTS TAB (STAFF & MANAGER INTERFACE) ── -->
+  <div class="tab-panel" id="tab-reports">
+    <div class="card">
+      <div class="card-title">📊 Generated Reports</div>
+      
+      {% if admin.role == 'manager' %}
+      <p style="color:var(--muted);font-size:.88rem;margin-bottom:1.25rem;">
+        Configure the period directly on each row, then view the latest version or compile a new one.
+      </p>
+
+      <!-- Row-Level Action Table (Manager Only) -->
+      <table class="tbl" style="font-size:.85rem; margin-bottom: 1.5rem; max-width: 720px;">
+        <thead>
+          <tr>
+            <th>Report Type</th>
+            <th>Choose Period</th> <!-- Dropdown column -->
+            <th style="text-align:right;">Actions</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td><strong>📦 Inventory Report</strong></td>
+            <td>
+              <select id="period-inventory" style="padding:.35rem .6rem; border:2px solid var(--border); border-radius:8px; font-family:inherit; font-size:.8rem; outline:none; background:var(--bg); color:var(--dark);">
+                <option value="all">🌟 All-Time</option>
+                <option value="day">🕐 Last 24 Hours</option>
+                <option value="week">📅 Last 7 Days</option>
+                <option value="month">📅 Last 30 Days</option>
+                <option value="year">📊 Last 365 Days</option>
+              </select>
+            </td>
+            <td style="text-align:right; display:flex; gap:.35rem; justify-content:end;">
+              <button class="btn btn-sm btn-outline" onclick="fetchReport('inventory', false)">👁️ View Latest</button>
+              <button class="btn btn-sm btn-primary" onclick="fetchReport('inventory', true)">➕ Compile New</button>
+            </td>
+          </tr>
+          <tr>
+            <td><strong>💰 Sales Report</strong></td>
+            <td>
+              <select id="period-sales" style="padding:.35rem .6rem; border:2px solid var(--border); border-radius:8px; font-family:inherit; font-size:.8rem; outline:none; background:var(--bg); color:var(--dark);">
+                <option value="all">🌟 All-Time</option>
+                <option value="day">🕐 Last 24 Hours</option>
+                <option value="week" selected>📅 Last 7 Days</option>
+                <option value="month">📅 Last 30 Days</option>
+                <option value="year">📊 Last 365 Days</option>
+              </select>
+            </td>
+            <td style="text-align:right; display:flex; gap:.35rem; justify-content:end;">
+              <button class="btn btn-sm btn-outline" onclick="fetchReport('sales', false)">👁️ View Latest</button>
+              <button class="btn btn-sm btn-primary" onclick="fetchReport('sales', true)">➕ Compile New</button>
+            </td>
+          </tr>
+          <tr>
+            <td><strong>🧾 Orders Report</strong></td>
+            <td>
+              <select id="period-orders" style="padding:.35rem .6rem; border:2px solid var(--border); border-radius:8px; font-family:inherit; font-size:.8rem; outline:none; background:var(--bg); color:var(--dark);">
+                <option value="all">🌟 All-Time</option>
+                <option value="day">🕐 Last 24 Hours</option>
+                <option value="week">📅 Last 7 Days</option>
+                <option value="month">📅 Last 30 Days</option>
+                <option value="year">📊 Last 365 Days</option>
+              </select>
+            </td>
+            <td style="text-align:right; display:flex; gap:.35rem; justify-content:end;">
+              <button class="btn btn-sm btn-outline" onclick="fetchReport('orders', false)">👁️ View Latest</button>
+              <button class="btn btn-sm btn-primary" onclick="fetchReport('orders', true)">➕ Compile New</button>
+            </td>
+          </tr>
+          <tr>
+            <td><strong>⭐ Feedback Report</strong></td>
+            <td>
+              <select id="period-feedback" style="padding:.35rem .6rem; border:2px solid var(--border); border-radius:8px; font-family:inherit; font-size:.8rem; outline:none; background:var(--bg); color:var(--dark);">
+                <option value="all">🌟 All-Time</option>
+                <option value="day">🕐 Last 24 Hours</option>
+                <option value="week">📅 Last 7 Days</option>
+                <option value="month">📅 Last 30 Days</option>
+                <option value="year">📊 Last 365 Days</option>
+              </select>
+            </td>
+            <td style="text-align:right; display:flex; gap:.35rem; justify-content:end;">
+              <button class="btn btn-sm btn-outline" onclick="fetchReport('feedback', false)">👁️ View Latest</button>
+              <button class="btn btn-sm btn-primary" onclick="fetchReport('feedback', true)">➕ Compile New</button>
+            </td>
+          </tr>
+          <tr>
+            <td><strong>🎫 Support Report</strong></td>
+            <td>
+              <select id="period-support" style="padding:.35rem .6rem; border:2px solid var(--border); border-radius:8px; font-family:inherit; font-size:.8rem; outline:none; background:var(--bg); color:var(--dark);">
+                <option value="all">🌟 All-Time</option>
+                <option value="day">🕐 Last 24 Hours</option>
+                <option value="week">📅 Last 7 Days</option>
+                <option value="month">📅 Last 30 Days</option>
+                <option value="year">📊 Last 365 Days</option>
+              </select>
+            </td>
+            <td style="text-align:right; display:flex; gap:.35rem; justify-content:end;">
+              <button class="btn btn-sm btn-outline" onclick="fetchReport('support', false)">👁️ View Latest</button>
+              <button class="btn btn-sm btn-primary" onclick="fetchReport('support', true)">➕ Compile New</button>
+            </td>
+          </tr>
+        </tbody>
+      </table>
+      {% else %}
+      <p style="color:var(--muted);font-size:.88rem;margin-bottom:1.25rem;">
+        Request and view the latest system report compiled by the Manager.
+      </p>
+      <!-- View & Request Actions (Staff Only) -->
+      <div style="display:flex;flex-wrap:wrap;gap:.75rem;margin-bottom:1.25rem; width: 100%;">
+        <div style="display:flex; flex-direction:column; gap:.5rem; background:var(--bg); padding:1rem; border-radius:12px; width:100%; border:1px solid var(--border);">
+          <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:.5rem;">
+            <span>📦 Inventory Report</span>
+            <div style="display:flex; gap:.35rem;">
+              <button class="btn btn-sm btn-outline" onclick="fetchReport('inventory')">👁️ View</button>
+              <button class="btn btn-sm btn-primary" onclick="requestReportCompilation('inventory')">📣 Request Update</button>
+            </div>
+          </div>
+          
+          <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:.5rem; border-top: 1px dashed var(--border); padding-top:.5rem;">
+            <span>💰 Sales Report</span>
+            <div style="display:flex; gap:.35rem;">
+              <button class="btn btn-sm btn-outline" onclick="fetchReport('sales')">👁️ View</button>
+              <button class="btn btn-sm btn-primary" onclick="requestReportCompilation('sales')">📣 Request Update</button>
+            </div>
+          </div>
+
+          <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:.5rem; border-top: 1px dashed var(--border); padding-top:.5rem;">
+            <span>🧾 Orders Report</span>
+            <div style="display:flex; gap:.35rem;">
+              <button class="btn btn-sm btn-outline" onclick="fetchReport('orders')">👁️ View</button>
+              <button class="btn btn-sm btn-primary" onclick="requestReportCompilation('orders')">📣 Request Update</button>
+            </div>
+          </div>
+
+          <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:.5rem; border-top: 1px dashed var(--border); padding-top:.5rem;">
+            <span>⭐ Feedback Report</span>
+            <div style="display:flex; gap:.35rem;">
+              <button class="btn btn-sm btn-outline" onclick="fetchReport('feedback')">👁️ View</button>
+              <button class="btn btn-sm btn-primary" onclick="requestReportCompilation('feedback')">📣 Request Update</button>
+            </div>
+          </div>
+
+          <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:.5rem; border-top: 1px dashed var(--border); padding-top:.5rem;">
+            <span>🎫 Support Report</span>
+            <div style="display:flex; gap:.35rem;">
+              <button class="btn btn-sm btn-outline" onclick="fetchReport('support')">👁️ View</button>
+              <button class="btn btn-sm btn-primary" onclick="requestReportCompilation('support')">📣 Request Update</button>
+            </div>
+          </div>
+        </div>
+      </div>
+      {% endif %}
+      
+      <!-- Label and Export Actions Toolbar -->
+      <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:.5rem; flex-wrap:wrap; gap:.5rem;">
+        <div id="report-label" style="font-size:.8rem;color:var(--muted); font-weight:700;"></div>
+        
+        <!-- Restored Export Actions Toolbar for CSV & PDF Downloads -->
+        <div id="report-actions-bar" style="display:none; gap:.5rem;">
+          <button class="btn btn-sm btn-outline" onclick="exportActiveReportCSV()">📥 Export CSV</button>
+          <button class="btn btn-sm btn-outline" onclick="window.print()">📄 Save PDF</button>
+        </div>
+      </div>
+      
+      <div id="report-container" class="report-box" style="font-family: inherit; white-space: normal; line-height: inherit; max-height: none;"></div>
+    </div>
+
+</div><!-- /page -->
+
+<div class="toast" id="toast"><span id="toast-msg"></span></div>
+
+<script>
+// Active report tracking states
+let activeReportType = '';
+let activeReportData = null;
+
+// ── Real-time Role-Aware Notification Monitoring ──
+let lastNotifCount = 0;
+
+function toggleAlertsDropdown(event) {
+  event.stopPropagation();
+  const dropdown = document.getElementById('admin-notif-dropdown');
+  dropdown.style.display = dropdown.style.display === 'block' ? 'none' : 'block';
+}
+
+// Close dropdown when clicking outside
+document.addEventListener('click', () => {
+  const dropdown = document.getElementById('admin-notif-dropdown');
+  if (dropdown) dropdown.style.display = 'none';
+});
+
+// Automatically restore the active tab state on page loads / reloads
+document.addEventListener("DOMContentLoaded", () => {
+  const savedTab = localStorage.getItem('adminActiveTab');
+  if (savedTab && document.getElementById('tab-' + savedTab)) {
+    switchTab(savedTab, null);
+    
+    // Auto-load the last saved inventory report if the restored tab is Reports
+    if (savedTab === 'reports') {
+      fetchReport('inventory', false);
+    }
+  } else {
+    switchTab('products', null); // Default fallback
+  }
+});
+
+async function markAlertsAsRead(event) {
+  event.stopPropagation();
+  const res = await fetch('/api/admin/notifications/read', { method: 'POST' });
+  const data = await res.json();
+  if (data.success) {
+    document.getElementById('admin-notif-badge').style.display = 'none';
+    lastNotifCount = 0;
+    fetchNotifications();
+  }
+}
+
+async function requestReportCompilation(type) {
+  const res = await fetch('/api/admin/report/request', {
+    method: 'POST', headers: {'Content-Type': 'application/json'},
+    body: JSON.stringify({report_type: type})
+  });
+  const data = await res.json();
+  if (data.success) {
+    showToast(`📣 Requested latest "${type.toUpperCase()}" compilation from Manager!`);
+  }
+}
+
+async function fetchNotifications() {
+  try {
+    const res = await fetch('/api/admin/notifications');
+    const data = await res.json();
+    
+    // Update badge count
+    const badge = document.getElementById('admin-notif-badge');
+    if (data.unread_count > 0) {
+      badge.textContent = data.unread_count;
+      badge.style.display = 'block';
+      
+      // Proactive push warning (Toast) if unread alert count increases
+      if (data.unread_count > lastNotifCount) {
+        const newestNotif = data.notifications[0];
+        showToast(newestNotif.message, newestNotif.message.includes('⚠'));
+      }
+    } else {
+      badge.style.display = 'none';
+    }
+    lastNotifCount = data.unread_count;
+
+    // Render alert list items
+    const list = document.getElementById('admin-notif-list');
+    if (data.notifications.length > 0) {
+      list.innerHTML = '';
+      data.notifications.forEach(n => {
+        const item = document.createElement('div');
+        item.style.padding = '.5rem';
+        item.style.borderRadius = '8px';
+        item.style.border = '1px solid var(--border)';
+        item.style.background = n.read ? 'transparent' : 'rgba(255,107,43,.03)';
+        item.innerHTML = `
+          <div style="font-weight:700; line-height: 1.3;">${n.message}</div>
+          <div style="font-size:.68rem; color:var(--muted); text-align:right; margin-top:.25rem;">${n.timestamp}</div>
+        `;
+        list.appendChild(item);
+      });
+    } else {
+      list.innerHTML = '<div style="color:var(--muted);text-align:center;padding:1rem 0;">No active notifications.</div>';
+    }
+  } catch(e) {
+    console.error("Failed to check real-time notifications", e);
+  }
+}
+
+// Check for notifications immediately on startup and poll every 4 seconds
+fetchNotifications();
+setInterval(fetchNotifications, 4000);
+
+
+// Open/Close New Reviews Explanation Modal
+function openTurnoverInfoModal(event) {
+  if (event) event.stopPropagation();
+  document.getElementById('turnover-info-modal').style.display = 'flex';
+}
+function closeTurnoverInfoModal() {
+  document.getElementById('turnover-info-modal').style.display = 'none';
+}
+
+// Add these two handlers for the New Reviews Modal
+function openReviewsInfoModal(event) {
+  if (event) event.stopPropagation();
+  document.getElementById('reviews-info-modal').style.display = 'flex';
+}
+function closeReviewsInfoModal() {
+  document.getElementById('reviews-info-modal').style.display = 'none';
+}
+
+// ── Tab switching ──
+function switchTab(name, btn) {
+  document.querySelectorAll('.tab-panel').forEach(p => p.classList.remove('active'));
+  document.querySelectorAll('.tab').forEach(b => b.classList.remove('active'));
+  document.getElementById('tab-' + name).classList.add('active');
+  if (btn) {
+    btn.classList.add('active');
+  } else {
+    // If called programmatically on load, locate the matching button element and highlight it
+    const targetBtn = Array.from(document.querySelectorAll('.tab')).find(b => b.getAttribute('onclick').includes(`'${name}'`));
+    if (targetBtn) targetBtn.classList.add('active');
+  }
+  
+  // Persist the active tab in browser storage through reloads
+  localStorage.setItem('adminActiveTab', name);
+}
+
+function showToast(msg, isError=false) {
+  const t = document.getElementById('toast');
+  document.getElementById('toast-msg').textContent = msg;
+  t.style.background = isError ? 'var(--red)' : 'var(--dark)';
+  t.classList.add('show');
+  setTimeout(() => t.classList.remove('show'), 3000);
+}
+
+// Filter order table rows by selected status stage
+function filterOrders(status, btn) {
+  // Update active pill state
+  document.querySelectorAll('.filter-pill').forEach(pill => {
+    pill.classList.remove('active');
+  });
+  btn.classList.add('active');
+
+  // Show/Hide rows in real-time
+  document.querySelectorAll('.order-row').forEach(row => {
+    const rowStatus = row.dataset.status;
+    if (status === 'all' || rowStatus === status) {
+      row.style.display = '';
+    } else {
+      row.style.display = 'none';
+    }
+  });
+}
+
+// ── Category Management Operations ──
+async function addCategory() {
+  const name = document.getElementById('cat-name-input').value.trim();
+  const desc = document.getElementById('cat-desc-input').value.trim();
+  if (!name) { showToast('❌ Category name cannot be blank', true); return; }
+  
+  const res = await fetch('/api/admin/category/add', {
+    method: 'POST', headers: {'Content-Type':'application/json'},
+    body: JSON.stringify({name, description: desc})
+  });
+  const data = await res.json();
+  if (data.success) {
+    showToast(`✅ Category "${data.category.name}" added!`);
+    setTimeout(() => location.reload(), 800);
+  } else {
+    showToast('❌ ' + data.error, true);
+  }
+}
+
+async function renameCategory(categoryId) {
+  const name = document.getElementById('cat-rename-' + categoryId).value.trim();
+  if (!name) { showToast('❌ Category name cannot be blank', true); return; }
+  
+  const res = await fetch('/api/admin/category/rename', {
+    method: 'POST', headers: {'Content-Type':'application/json'},
+    body: JSON.stringify({category_id: categoryId, name})
+  });
+  const data = await res.json();
+  if (data.success) {
+    showToast(`✓ Category renamed to "${data.category.name}"`);
+    setTimeout(() => location.reload(), 800);
+  } else {
+    showToast('❌ ' + data.error, true);
+  }
+}
+
+// Toggles category active status in real-time with strict type-safety
+async function toggleCategoryActive(categoryId) {
+  try {
+    const res  = await fetch('/api/admin/category/toggle_active', {
+      method: 'POST', 
+      headers: {'Content-Type':'application/json'},
+      body: JSON.stringify({category_id: categoryId})
+    });
+    
+    if (!res.ok) {
+      const errText = await res.text();
+      console.error("Server returned an error:", errText);
+      showToast('❌ Server error. Please check your python console.', true);
+      return;
+    }
+    
+    const data = await res.json();
+    if (data.success) {
+      const badge = document.getElementById('cat-status-' + categoryId);
+      const btn   = document.getElementById('cat-toggle-btn-' + categoryId);
+      
+      // Defensive Type-Checking: support both boolean and stringified payloads
+      const isActive = (data.category.is_active === true || data.category.is_active === "true");
+      
+      if (isActive) {
+        badge.innerHTML = '<span class="badge badge-green">Active</span>';
+        btn.textContent = 'Deactivate';
+        
+        btn.classList.remove('btn-primary');
+        btn.classList.add('btn-danger');
+        
+        showToast('✓ Category activated!');
+      } else {
+        badge.innerHTML = '<span class="badge badge-muted">Inactive</span>';
+        btn.textContent = 'Activate';
+        
+        btn.classList.remove('btn-danger');
+        btn.classList.add('btn-primary');
+        
+        showToast('⏸ Category deactivated!');
+      }
+    } else {
+      showToast('❌ ' + data.error, true);
+    }
+  } catch (e) {
+    console.error("JavaScript execution crashed during category toggle:", e);
+    showToast('❌ Connection error. Please try again.', true);
+  }
+}
+
+// ── Add product ──
+async function addProduct() {
+  const name     = document.getElementById('p-name').value.trim();
+  const emoji    = document.getElementById('p-emoji').value.trim() || '📦';
+  const desc     = document.getElementById('p-desc').value.trim();
+  const price    = parseFloat(document.getElementById('p-price').value);
+  const stock    = parseInt(document.getElementById('p-stock').value);
+  const catId    = document.getElementById('p-category').value;
+
+  // Client-side validation
+  let valid = true;
+  const show = (id, show) => document.getElementById(id).style.display = show ? 'block' : 'none';
+  show('err-name', !name);   if (!name) valid = false;
+  show('err-price', !price || price <= 0); if (!price || price <= 0) valid = false;
+  show('err-stock', isNaN(stock) || stock < 0); if (isNaN(stock) || stock < 0) valid = false;
+  show('err-cat', !catId); if (!catId) valid = false;
+  if (!valid) return;
+
+  const res  = await fetch('/api/admin/product/add', {
+    method: 'POST', headers: {'Content-Type':'application/json'},
+    body: JSON.stringify({name, emoji, description: desc, price, stock, category_id: catId})
+  });
+  const data = await res.json();
+  if (data.success) {
+    showToast(`✅ ${data.product.name} added!`);
+    setTimeout(() => location.reload(), 800);
+  } else {
+    showToast('❌ ' + data.error, true);
+  }
+}
+
+// Restock product stock level and instantly update status badges
+async function restock(productId) {
+  const qty = parseInt(document.getElementById('rs-' + productId).value);
+  if (!qty || qty < 1) { showToast('❌ Enter a valid quantity', true); return; }
+  
+  const res  = await fetch('/api/admin/product/restock', {
+    method: 'POST', headers: {'Content-Type':'application/json'},
+    body: JSON.stringify({product_id: productId, quantity: qty})
+  });
+  const data = await res.json();
+  if (data.success) {
+    const newStock = data.product.stock_quantity;
+    
+    // Update the Stock quantity display
+    document.getElementById('stock-' + productId).innerHTML = `<strong>${newStock}</strong>`;
+    
+    // Instantly update the Status Badge display based on the new stock quantity
+    const statusCell = document.getElementById('status-' + productId);
+    if (newStock === 0) {
+      statusCell.innerHTML = '<span class="badge badge-red">Out of Stock</span>';
+    } else if (newStock <= 5) {
+      statusCell.innerHTML = '<span class="badge badge-yellow">Low Stock</span>';
+    } else {
+      statusCell.innerHTML = '<span class="badge badge-green">In Stock</span>';
+    }
+    
+    showToast(`✅ Restocked! New stock: ${newStock}`);
+  } else {
+    showToast('❌ ' + data.error, true);
+  }
+}
+
+async function toggleProductActive(productId) {
+  const res  = await fetch('/api/admin/product/toggle_active', {
+    method: 'POST', headers: {'Content-Type':'application/json'},
+    body: JSON.stringify({product_id: productId})
+  });
+  const data = await res.json();
+  if (data.success) {
+    const badge = document.getElementById('visibility-' + productId);
+    const btn   = document.getElementById('toggle-btn-' + productId);
+    
+    if (data.is_active) {
+      badge.innerHTML = '<span class="badge badge-green">Visible</span>';
+      btn.textContent = 'Hide';
+      btn.className = 'btn btn-sm btn-danger';
+      showToast('✓ Product is now visible to shoppers');
+    } else {
+      badge.innerHTML = '<span class="badge badge-muted">Hidden</span>';
+      btn.textContent = 'Show';
+      btn.className = 'btn btn-sm btn-primary';
+      showToast('👁️ Product hidden from shopper catalog');
+    }
+  } else {
+    showToast('❌ ' + data.error, true);
+  }
+}
+
+// Permanent hard-deletion of product from the catalog
+async function removeProduct(productId, btn) {
+  if (!confirm('Permanently delete this product from the database? Warning: This will break old order displays if the product was already purchased.')) return;
+  
+  const res  = await fetch('/api/admin/product/remove', {
+    method: 'POST', headers: {'Content-Type':'application/json'},
+    body: JSON.stringify({product_id: productId})
+  });
+  const data = await res.json();
+  if (data.success) {
+    const row = document.getElementById('row-' + productId);
+    row.style.opacity = '0'; row.style.transition = 'opacity .3s';
+    setTimeout(() => row.remove(), 300);
+    showToast('🗑️ Product permanently removed');
+  } else {
+    showToast('❌ ' + data.error, true);
+  }
+}
+
+// ── Manual State Transitions ──
+async function acceptOrder(orderId) {
+  const res = await fetch('/api/admin/order/accept', {
+    method: 'POST', headers: {'Content-Type': 'application/json'},
+    body: JSON.stringify({order_id: orderId})
+  });
+  const data = await res.json();
+  if (data.success) {
+    showToast('✓ Order accepted and is now processing!');
+    setTimeout(() => location.reload(), 800);
+  }
+}
+
+function openShipModal(orderId) {
+  document.getElementById('ship-order-id').value = orderId;
+  document.getElementById('ship-tracking').value = '';
+  document.getElementById('ship-modal').style.display = 'flex';
+}
+function closeShipModal() {
+  document.getElementById('ship-modal').style.display = 'none';
+}
+
+// Open/Close Turnover Statistics Explanation Modal
+function openTurnoverInfoModal(event) {
+  if (event) event.stopPropagation(); // Prevent card event bubbling
+  document.getElementById('turnover-info-modal').style.display = 'flex';
+}
+function closeTurnoverInfoModal() {
+  document.getElementById('turnover-info-modal').style.display = 'none';
+}
+
+async function submitShip() {
+  const orderId  = document.getElementById('ship-order-id').value;
+  const carrier  = document.getElementById('ship-carrier').value.trim();
+  const tracking = document.getElementById('ship-tracking').value.trim();
+  if (!tracking) {
+    document.getElementById('err-ship-tracking').style.display = 'block';
+    return;
+  }
+  document.getElementById('err-ship-tracking').style.display = 'none';
+  const res = await fetch('/api/admin/order/ship', {
+    method: 'POST', headers: {'Content-Type': 'application/json'},
+    body: JSON.stringify({order_id: orderId, carrier, tracking_number: tracking})
+  });
+  const data = await res.json();
+  if (data.success) {
+    closeShipModal();
+    showToast('✓ Package shipped successfully!');
+    setTimeout(() => location.reload(), 800);
+  }
+}
+
+async function deliverOrder(orderId) {
+  const res = await fetch('/api/admin/order/deliver', {
+    method: 'POST', headers: {'Content-Type': 'application/json'},
+    body: JSON.stringify({order_id: orderId})
+  });
+  const data = await res.json();
+  if (data.success) {
+    showToast('✓ Order marked as delivered!');
+    setTimeout(() => location.reload(), 800);
+  }
+}
+
+async function cancelOrder(orderId) {
+  if (!confirm('Cancel this order?')) return;
+  const res = await fetch('/api/admin/order/cancel', {
+    method: 'POST', headers: {'Content-Type': 'application/json'},
+    body: JSON.stringify({order_id: orderId})
+  });
+  const data = await res.json();
+  if (data.success) {
+    showToast('Order cancelled.');
+    setTimeout(() => location.reload(), 800);
+  }
+}
+
+async function refundOrder(orderId) {
+  if (!confirm('Refund this order?')) return;
+  const res = await fetch('/api/admin/order/refund', {
+    method: 'POST', headers: {'Content-Type': 'application/json'},
+    body: JSON.stringify({order_id: orderId})
+  });
+  const data = await res.json();
+  if (data.success) {
+    showToast('Order refunded.');
+    setTimeout(() => location.reload(), 800);
+  }
+}
+
+// ── Tickets ──
+async function assignTicket(ticketId) {
+  const select = document.getElementById('assign-select-' + ticketId);
+  const assigneeId = select ? select.value : '';
+  const res  = await fetch('/api/admin/ticket/assign', {
+    method: 'POST', headers: {'Content-Type':'application/json'},
+    body: JSON.stringify({ticket_id: ticketId, assignee_id: assigneeId})
+  });
+  const data = await res.json();
+  if (data.success) {
+    showToast(`📋 Ticket assigned to ${data.ticket.assigned_to}`);
+    setTimeout(() => location.reload(), 800);
+  } else {
+    showToast('❌ ' + data.error, true);
+  }
+}
+
+function openResolve(ticketId) {
+  document.getElementById('resolve-ticket-id').value = ticketId;
+  document.getElementById('resolve-notes').value = '';
+  document.getElementById('resolve-modal').style.display = 'flex';
+}
+function closeResolve() {
+  document.getElementById('resolve-modal').style.display = 'none';
+}
+
+async function submitResolve() {
+  const ticketId = document.getElementById('resolve-ticket-id').value;
+  const notes    = document.getElementById('resolve-notes').value.trim();
+  if (!notes) {
+    document.getElementById('err-resolve').style.display = 'block';
+    return;
+  }
+  document.getElementById('err-resolve').style.display = 'none';
+  const res  = await fetch('/api/admin/ticket/resolve', {
+    method: 'POST', headers: {'Content-Type':'application/json'},
+    body: JSON.stringify({ticket_id: ticketId, notes})
+  });
+  const data = await res.json();
+  if (data.success) {
+    closeResolve();
+    showToast('✅ Ticket resolved');
+    setTimeout(() => location.reload(), 800);
+  } else {
+    showToast('❌ ' + data.error, true);
+  }
+}
+
+// ── Reports ──
+// ── Real-time Report Generation Dashboard ──
+
+// Fetches report data from backend API
+async function fetchReport(type, compileNew = false) {
+  document.getElementById('report-label').textContent = `Loading ${type} report…`;
+  const container = document.getElementById('report-container');
+  const action_bar = document.getElementById('report-actions-bar');
+  container.classList.remove('show');
+  action_bar.style.display = 'none';
+  
+  // Read the row-level period dropdown selector specific to this report type
+  const periodSelector = document.getElementById('period-' + type);
+  const period = periodSelector ? periodSelector.value : 'all';
+  
+  // Append both period and compile query parameters
+  const res  = await fetch(`/api/admin/report/${type}?period=${period}&compile=${compileNew}`);
+  
+  // Handle un-compiled (404) gracefully
+  if (!res.ok) {
+    const errData = await res.json();
+    document.getElementById('report-label').textContent = `❌ ${type.toUpperCase()} REPORT`;
+    container.innerHTML = `<div style="text-align:center; padding:2rem; color:var(--red); font-weight:700; font-size:.85rem;">⚠️ ${errData.error}</div>`;
+    container.classList.add('show');
+    return;
+  }
+  
+  const data = await res.json();
+  
+  activeReportType = type;
+  activeReportData = data.data;
+  
+  const dateStr = data.generated_at 
+    ? data.generated_at.substring(0, 16).replace('T', ' ') 
+    : new Date().toISOString().substring(0,16).replace('T', ' ');
+    
+  const sDate = data.start_date.substring(0, 10);
+  const eDate = data.end_date.substring(0, 10);
+  document.getElementById('report-label').textContent = `📊 ${type.toUpperCase()} REPORT (${sDate} to ${eDate}) — generated ${dateStr}`;
+  
+  container.innerHTML = buildReportDashboard(type, data.data);
+  container.classList.add('show');
+  action_bar.style.display = 'flex';
+  
+  // Trigger Chart.js compiler
+  renderReportChart(type, data.data);
+}
+
+
+// Compiles raw database JSON objects into clean, responsive HTML dashboards
+function buildReportDashboard(type, data) {
+  if (!data) return '<p style="color:var(--muted)">No report data available.</p>';
+  
+  // Declared at the absolute top of the function to prevent ReferenceErrors
+  let html = '';
+  
+  // ── 1. INVENTORY REPORT ──
+  if (type === 'inventory') {
+    html += `
+      <div style="display:grid; grid-template-columns: repeat(5, 1fr); gap:.5rem; margin-bottom:1.25rem;">
+        <div style="background:var(--bg); padding:.75rem .5rem; border-radius:10px; text-align:center; border:1px solid var(--border);">
+          <div style="font-size:1.3rem; font-weight:700; color:var(--orange);">${data.total_products || 0}</div>
+          <div style="font-size:.65rem; color:var(--muted); text-transform:uppercase; font-weight:700;">Total Items</div>
+        </div>
+        <div style="background:var(--bg); padding:.75rem .5rem; border-radius:10px; text-align:center; border:1px solid var(--border);">
+          <div style="font-size:1.3rem; font-weight:700; color:var(--orange);">${data.total_stock_units || 0}</div>
+          <div style="font-size:.65rem; color:var(--muted); text-transform:uppercase; font-weight:700;">Total Stock</div>
+        </div>
+        <div style="background:var(--bg); padding:.75rem .5rem; border-radius:10px; text-align:center; border:1px solid var(--border);">
+          <div style="font-size:1.3rem; font-weight:700; color:var(--red);">${data.out_of_stock_count || 0}</div>
+          <div style="font-size:.65rem; color:var(--muted); text-transform:uppercase; font-weight:700;">Out Stock</div>
+        </div>
+        <div style="background:var(--bg); padding:.75rem .5rem; border-radius:10px; text-align:center; border:1px solid var(--border);">
+          <div style="font-size:1.3rem; font-weight:700; color:var(--yellow);">${data.low_stock_count || 0}</div>
+          <div style="font-size:.65rem; color:var(--muted); text-transform:uppercase; font-weight:700;">Low Stock</div>
+        </div>
+        <!-- Inventory Turnover KPI -->
+        <div style="background:rgba(46,204,113,.06); padding:.75rem .5rem; border-radius:10px; text-align:center; border:1px dashed var(--green);">
+          <div style="font-size:1.3rem; font-weight:700; color:var(--green);">${(data.global_turnover_ratio || 0).toFixed(2)}x</div>
+          <div style="font-size:.65rem; color:var(--green); text-transform:uppercase; font-weight:700; display:flex; align-items:center; justify-content:center; gap:.25rem;">
+            Turnover Ratio
+            <!-- Circular Outline Info Icon -->
+            <span style="cursor:pointer; display:inline-flex; align-items:center; justify-content:center; width:14px; height:14px; font-size:.6rem; font-weight:700; font-family:monospace;" 
+              onclick="openTurnoverInfoModal(event)" 
+              title="How is this measured?">🛈</span>
+          </div>
+        </div>
+      </div>
+      
+      <div style="font-family:'Righteous',cursive; font-size:1rem; margin-bottom:.5rem;">📈 Stock Turnover Velocity</div>
+      <table class="tbl" style="font-size:.78rem; margin-bottom: 1.5rem;">
+        <thead>
+          <tr><th>Product ID</th><th>Product Name</th><th>Units Sold</th><th>Stock Left</th><th>Turnover Rate</th></tr>
+        </thead>
+        <tbody>
+    `;
+    const velocities = data.turnover_details || [];
+    velocities.forEach(v => {
+      html += `
+        <tr>
+          <td style="font-family:monospace;">${v.product_id}</td>
+          <td><strong>${v.name}</strong></td>
+          <td>${v.units_sold}</td>
+          <td>${v.stock_left}</td>
+          <td><strong style="color:var(--orange)">${v.turnover_ratio.toFixed(2)}x</strong></td>
+        </tr>
+      `;
+    });
+    html += '</tbody></table>';
+  }
+  
+  // ── 2. SALES REPORT ──
+  else if (type === 'sales') {
+    let catBreakdownHtml = '';
+    if (data.category_sales) {
+      Object.keys(data.category_sales).forEach(catId => {
+        catBreakdownHtml += `
+          <div style="display:flex; justify-content:space-between; font-size:.82rem; padding:.35rem 0; border-bottom:1px dashed var(--border);">
+            <span>📁 Category: <strong>${catId}</strong></span>
+            <strong style="color:var(--orange)">$${data.category_sales[catId].toFixed(2)}</strong>
+          </div>
+        `;
+      });
+    }
+    if (!catBreakdownHtml) catBreakdownHtml = '<p style="color:var(--muted)">No category sales compiled.</p>';
+
+    let perfHtml = '<div style="display:grid; grid-template-columns:1fr 1fr; gap:1rem;">';
+    
+    // Top 3 Products
+    perfHtml += '<div style="background:rgba(46,204,113,.04); border:1px solid rgba(46,204,113,.15); padding:1rem; border-radius:12px;">';
+    perfHtml += '<h5 style="font-family:\'Righteous\',sans-serif; margin-bottom:.5rem; color:var(--green)">🔥 Top Selling Products</h5>';
+    if (data.top_selling && data.top_selling.length > 0) {
+      data.top_selling.forEach((p, idx) => {
+        perfHtml += `<div style="font-size:.8rem; margin-bottom:.25rem;">#${idx+1} <strong>${p.name}</strong> — ${p.qty_sold} sold</div>`;
+      });
+    } else { perfHtml += '<p style="font-size:.78rem; color:var(--muted)">No sales data</p>'; }
+    perfHtml += '</div>';
+
+    // Bottom 3 Products
+    perfHtml += '<div style="background:rgba(255,71,87,.04); border:1px solid rgba(255,71,87,.15); padding:1rem; border-radius:12px;">';
+    perfHtml += '<h5 style="font-family:\'Righteous\',sans-serif; margin-bottom:.5rem; color:var(--red)">❄ Low Performing Products</h5>';
+    if (data.low_performing && data.low_performing.length > 0) {
+      data.low_performing.forEach((p, idx) => {
+        perfHtml += `<div style="font-size:.8rem; margin-bottom:.25rem;">#${idx+1} <strong>${p.name}</strong> — ${p.qty_sold} sold</div>`;
+      });
+    } else { perfHtml += '<p style="font-size:.78rem; color:var(--muted)">No sales data</p>'; }
+    perfHtml += '</div></div>';
+
+    html += `
+      <div style="display:grid; grid-template-columns: repeat(4, 1fr); gap:.75rem; margin-bottom:1.25rem;">
+        <div style="background:var(--bg); padding:.75rem; border-radius:10px; text-align:center; border:1px solid var(--border);">
+          <div style="font-size:1.5rem; font-weight:700; color:var(--orange);">$${(data.total_revenue || 0).toFixed(2)}</div>
+          <div style="font-size:.72rem; color:var(--muted); text-transform:uppercase; font-weight:700;">Total Revenue</div>
+        </div>
+        <div style="background:var(--bg); padding:.75rem; border-radius:10px; text-align:center; border:1px solid var(--border);">
+          <div style="font-size:1.5rem; font-weight:700; color:var(--orange);">$${(data.average_order_value || 0).toFixed(2)}</div>
+          <div style="font-size:.72rem; color:var(--muted); text-transform:uppercase; font-weight:700;">Avg Order Value</div>
+        </div>
+        <div style="background:var(--bg); padding:.75rem; border-radius:10px; text-align:center; border:1px solid var(--border);">
+          <div style="font-size:1.5rem; font-weight:700; color:var(--orange);">${data.total_paid_orders || 0}</div>
+          <div style="font-size:.72rem; color:var(--muted); text-transform:uppercase; font-weight:700;">Paid Orders</div>
+        </div>
+        <div style="background:var(--bg); padding:.75rem; border-radius:10px; text-align:center; border:1px solid var(--border);">
+          <div style="font-size:1.5rem; font-weight:700; color:var(--orange);">${data.total_invoices || 0}</div>
+          <div style="font-size:.72rem; color:var(--muted); text-transform:uppercase; font-weight:700;">Invoices Issued</div>
+        </div>
+      </div>
+
+      <!-- Performance Grid -->
+      <div style="margin-bottom: 1.5rem;">${perfHtml}</div>
+
+      <!-- Category Breakdown Grid -->
+      <div style="background:var(--bg); border:1px solid var(--border); border-radius:12px; padding:1.25rem; margin-bottom:1.5rem;">
+        <h5 style="font-family:'Righteous',sans-serif; margin-bottom:.5rem;">📁 Category sales breakdown</h5>
+        <div>${catBreakdownHtml}</div>
+      </div>
+
+      <div style="font-family:'Righteous',cursive; font-size:1.05rem; margin-bottom:.5rem;">🧾 Invoice Ledger</div>
+      <table class="tbl" style="font-size:.8rem;">
+        <thead>
+          <tr><th>Invoice ID</th><th>Order ID</th><th>Date Issued</th><th>Amount</th><th>Status</th></tr>
+        </thead>
+        <tbody>
+    `;
+    const list = data.invoice_details || [];
+    list.forEach(inv => {
+      const shortInv = inv.invoice_id ? inv.invoice_id.substring(0,8).toUpperCase() : 'N/A';
+      const shortOrd = inv.order_id ? inv.order_id.substring(0,8).toUpperCase() : 'N/A';
+      const dateStr = inv.issued_at ? inv.issued_at.substring(0,10) : 'N/A';
+      
+      html += `
+        <tr>
+          <td style="font-family:monospace;font-size:.75rem;">#${shortInv}</td>
+          <td style="font-family:monospace;font-size:.75rem;">#${shortOrd}</td>
+          <td style="font-size:.75rem;">${dateStr}</td>
+          <td><strong>$${inv.amount.toFixed(2)}</strong></td>
+          <td><span class="badge ${inv.is_paid ? 'badge-green' : 'badge-red'}">${inv.is_paid ? '✓ Paid' : 'Unpaid'}</span></td>
+        </tr>
+      `;
+    });
+    html += '</tbody></table>';
+  }
+  
+  // ── 3. ORDERS REPORT ──
+  else if (type === 'orders') {
+    let statusPills = '';
+    if (data.by_status) {
+      Object.keys(data.by_status).forEach(k => {
+        statusPills += `<span class="badge badge-yellow" style="margin-right:.5rem; margin-top:.25rem;">${k.toUpperCase()}: ${data.by_status[k]}</span>`;
+      });
+    }
+    html += `
+      <div style="background:var(--bg); padding:1rem; border-radius:12px; margin-bottom:1.25rem; border:1px solid var(--border);">
+        <div style="font-size:1.3rem; font-weight:700; color:var(--orange); margin-bottom:.5rem;">Total Orders: ${data.total_orders || 0}</div>
+        <div style="display:flex; flex-wrap:wrap; gap:.25rem;">${statusPills}</div>
+      </div>
+      <table class="tbl" style="font-size:.8rem;">
+        <thead>
+          <tr><th>Order ID</th><th>Customer</th><th>Items</th><th>Total Amount</th><th>Status</th></tr>
+        </thead>
+        <tbody>
+    `;
+    const ordersList = data.orders || [];
+            ordersList.forEach(o => {
+              let itemsText = '';
+              if (o.items) {
+                o.items.forEach(i => {
+                  itemsText += `<span style="font-size:.75rem; margin-right:.4rem; display:inline-block; background:var(--surface); border:1px solid var(--border); padding:.1rem .4rem; border-radius:6px;">${i.product_name} ×${i.quantity}</span>`;
+                });
+              }
+              const shortId = o.order_id ? o.order_id.substring(0,8).toUpperCase() : 'N/A';
+              
+              // Calculate grand total dynamically for the order row
+              const oGrand = o.total_amount + (o.total_amount >= 25 ? 0 : 3.99);
+              
+              html += `
+                <tr>
+                  <td style="font-family:monospace;font-size:.75rem;">#${shortId}</td>
+                  <td>${o.customer_name}</td>
+                  <td>${itemsText}</td>
+                  <td><strong>$${oGrand.toFixed(2)}</strong></td>
+                  <td><span class="badge badge-purple">${o.status}</span></td>
+                </tr>
+              `;
+            });
+    html += '</tbody></table>';
+  }
+  
+  // ── 4. FEEDBACK REPORT ──
+  else if (type === 'feedback') {
+    html += `
+      <div style="display:grid; grid-template-columns: 1fr 2fr; gap:1.25rem; margin-bottom:1.25rem;">
+        <div style="background:var(--bg); padding:1rem; border-radius:12px; text-align:center; border:1px solid var(--border); display:flex; flex-direction:column; justify-content:center;">
+          <div style="font-size:2.5rem; font-weight:700; color:var(--yellow);">${(data.average_rating || 0).toFixed(1)}</div>
+          <div style="font-size:.78rem; color:var(--muted); text-transform:uppercase; font-weight:700;">Average Rating</div>
+          <div style="font-size:1.1rem; color:var(--yellow); margin-top:.25rem;">★★★★★</div>
+        </div>
+        <div style="background:var(--bg); padding:1rem; border-radius:12px; font-size:.82rem; display:flex; flex-direction:column; gap:.35rem; justify-content:center; border:1px solid var(--border);">
+          <div>🌟 5 Stars: <strong>${data.five_star || 0}</strong></div>
+          <div>🌟 4 Stars: <strong>${data.four_star || 0}</strong></div>
+          <div>🌟 3 Stars: <strong>${data.three_star || 0}</strong></div>
+          <div>🌟 2 Stars: <strong>${data.two_star || 0}</strong></div>
+          <div>🌟 1 Star:  <strong>${data.one_star || 0}</strong></div>
+        </div>
+      </div>
+      <div style="font-family:'Righteous',cursive; font-size:1.05rem; margin-bottom:.5rem;">Recent Reviews (${data.total_feedback || 0})</div>
+      <div style="display:flex; flex-direction:column; gap:.65rem; max-height: 400px; overflow-y: auto; padding-right: .5rem;">
+    `;
+    const list = data.feedbacks || [];
+    list.forEach(f => {
+      let starsText = '';
+      for (let i = 0; i < f.rating; i++) starsText += '★';
+      for (let i = f.rating; i < 5; i++) starsText += '☆';
+      const shortOrdId = f.order_id ? f.order_id.substring(0,8).toUpperCase() : 'N/A';
+      html += `
+        <div style="background:var(--bg); border:1px solid var(--border); border-radius:10px; padding:.75rem 1rem;">
+          <div style="display:flex; justify-content:space-between; margin-bottom:.35rem;">
+            <span style="font-weight:700; font-size:.85rem;">${f.customer_name}</span>
+            <span style="color:var(--yellow); font-size:.8rem;">${starsText}</span>
+          </div>
+          <p style="font-size:.82rem; font-style:italic; color:var(--muted);">"${f.comment}"</p>
+          <div style="font-size:.68rem; color:var(--muted); text-align:right; margin-top:.25rem;">Order: #${shortOrdId}</div>
+        </div>
+      `;
+    });
+    if (list.length === 0) {
+      html += '<p style="color:var(--muted); text-align:center; padding:1.5rem 0;">No customer reviews submitted yet.</p>';
+    }
+    html += '</div>';
+  }
+  
+  // ── 5. SUPPORT REPORT ──
+  else if (type === 'support') {
+    html += `
+      <div style="display:grid; grid-template-columns: repeat(4, 1fr); gap:.75rem; margin-bottom:1.25rem;">
+        <div style="background:var(--bg); padding:.75rem; border-radius:10px; text-align:center; border:1px solid var(--border);">
+          <div style="font-size:1.8rem; font-weight:700; color:var(--orange);">${data.total_tickets || 0}</div>
+          <div style="font-size:.7rem; color:var(--muted); text-transform:uppercase; font-weight:700;">Total Tickets</div>
+        </div>
+        <div style="background:var(--bg); padding:.75rem; border-radius:10px; text-align:center; border:1px solid var(--border);">
+          <div style="font-size:1.8rem; font-weight:700; color:var(--green);">${data.resolved || 0}</div>
+          <div style="font-size:.7rem; color:var(--muted); text-transform:uppercase; font-weight:700;">Resolved</div>
+        </div>
+        <div style="background:var(--bg); padding:.75rem; border-radius:10px; text-align:center; border:1px solid var(--border);">
+          <div style="font-size:1.8rem; font-weight:700; color:var(--red);">${data.open || 0}</div>
+          <div style="font-size:.7rem; color:var(--muted); text-transform:uppercase; font-weight:700;">Open</div>
+        </div>
+        <div style="background:var(--bg); padding:.75rem; border-radius:10px; text-align:center; border:1px solid var(--border);">
+          <div style="font-size:1.8rem; font-weight:700; color:var(--yellow);">${data.in_progress || 0}</div>
+          <div style="font-size:.7rem; color:var(--muted); text-transform:uppercase; font-weight:700;">In Progress</div>
+        </div>
+      </div>
+      <div style="text-align:center; padding:1.25rem; background:rgba(46,204,113,.06); border:2px dashed rgba(46,204,113,.35); border-radius:12px; font-size:.9rem; color:var(--green); font-weight:700;">
+        ✓ Support Resolution Rate: ${data.resolution_rate || 0}%
+      </div>
+    `;
+  }
+
+  // this standardized canvas block directly above the end of each if/else block inside buildReportDashboard()
+    html += `
+      <div style="background:var(--bg); padding:1.25rem 1rem; border-radius:12px; border:1px solid var(--border); margin-top:1.5rem;">
+        <h5 style="font-family:'Righteous',sans-serif; margin-bottom:.75rem;">📊 Data Visualization</h5>
+        <div style="height: 250px; position: relative; width: 100%;">
+          <canvas id="reportChart"></canvas>
+        </div>
+      </div>
+    `;
+
+  return html;
+}
+
+// Formats and downloads the active report as a standard CSV file
+function exportActiveReportCSV() {
+  if (!activeReportData || !activeReportType) return;
+  
+  let csvContent = "";
+  const filename = `report_${activeReportType}_${new Date().toISOString().substring(0,10)}.csv`;
+  
+  if (activeReportType === 'inventory') {
+    csvContent += "Product ID,Product Name,Price,Stock,Status\n";
+    const list = activeReportData.products || [];
+    list.forEach(p => {
+      const status = p.stock_quantity === 0 ? "Out of Stock" : (p.stock_quantity <= 5 ? "Low Stock" : "In Stock");
+      csvContent += `"${p.product_id}","${p.name.replace(/"/g, '""')}",${p.price},${p.stock_quantity},"${status}"\n`;
+    });
+  }
+  else if (activeReportType === 'sales') {
+    csvContent += "Invoice ID,Order ID,Date Issued,Amount,Status\n";
+    const list = activeReportData.invoice_details || [];
+    list.forEach(inv => {
+      const status = inv.is_paid ? "Paid" : "Unpaid";
+      const shortInv = inv.invoice_id ? inv.invoice_id.substring(0,8).toUpperCase() : 'N/A';
+      const shortOrd = inv.order_id ? inv.order_id.substring(0,8).toUpperCase() : 'N/A';
+      const dateStr = inv.issued_at ? inv.issued_at.substring(0,10) : 'N/A';
+      csvContent += `"#${shortInv}","#${shortOrd}","${dateStr}",${inv.amount},"${status}"\n`;
+    });
+  }
+  else if (activeReportType === 'orders') {
+    csvContent += "Order ID,Customer,Total Amount,Status\n";
+    const list = activeReportData.orders || [];
+    list.forEach(o => {
+      const shortId = o.order_id ? o.order_id.substring(0,8).toUpperCase() : 'N/A';
+      csvContent += `"#${shortId}","${o.customer_name.replace(/"/g, '""')}",${o.total_amount},"${o.status}"\n`;
+    });
+  }
+  else if (activeReportType === 'feedback') {
+    csvContent += "Customer Name,Rating,Comment,Order ID\n";
+    const list = activeReportData.feedbacks || [];
+    list.forEach(f => {
+      const shortId = f.order_id ? f.order_id.substring(0,8).toUpperCase() : 'N/A';
+      csvContent += `"${f.customer_name.replace(/"/g, '""')}",${f.rating},"${f.comment.replace(/"/g, '""')}","#${shortId}"\n`;
+    });
+  }
+  else if (activeReportType === 'support') {
+    csvContent += "Support Metric,Value\n";
+    csvContent += `Total Tickets,${activeReportData.total_tickets || 0}\n`;
+    csvContent += `Resolved,${activeReportData.resolved || 0}\n`;
+    csvContent += `Open,${activeReportData.open || 0}\n`;
+    csvContent += `In Progress,${activeReportData.in_progress || 0}\n`;
+    csvContent += `Resolution Rate,${activeReportData.resolution_rate || 0}%\n`;
+  }
+  
+  // Trigger standard browser download
+  const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+  const link = document.createElement("a");
+  if (link.download !== undefined) {
+    const url = URL.createObjectURL(blob);
+    link.setAttribute("href", url);
+    link.setAttribute("download", filename);
+    link.style.visibility = 'hidden';
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+  }
+}
+
+let activeChartInstance = null;
+
+// Dynamically compiles datasets into responsive graphics using Chart.js
+function renderReportChart(type, data) {
+  const ctx = document.getElementById('reportChart');
+  if (!ctx) return;
+
+  // Destroy previous chart instances to prevent rendering overlaps on hot-swaps
+  if (activeChartInstance) {
+    activeChartInstance.destroy();
+  }
+
+  let chartType = 'bar';
+  let chartLabels = [];
+  let chartDatasets = [];
+  let chartOptions = {
+    responsive: true,
+    maintainAspectRatio: false,
+    plugins: {
+      legend: { display: false }
+    },
+    scales: {
+      y: { beginAtZero: true }
+    }
+  };
+
+  if (type === 'inventory') {
+    const list = data.products || [];
+    chartLabels = list.map(p => p.name);
+    chartDatasets = [{
+      label: 'Stock Quantity',
+      data: list.map(p => p.stock_quantity),
+      backgroundColor: 'rgba(255, 107, 43, 0.6)',
+      borderColor: '#ff6b2b',
+      borderWidth: 2
+    }];
+    chartOptions.plugins.legend.display = true;
+  } 
+  else if (type === 'sales') {
+    const catSales = data.category_sales || {};
+    chartLabels = Object.keys(catSales);
+    chartDatasets = [{
+      label: 'Revenue ($)',
+      data: Object.values(catSales),
+      backgroundColor: 'rgba(46, 204, 113, 0.65)',
+      borderColor: '#2ecc71',
+      borderWidth: 2
+    }];
+    chartOptions.plugins.legend.display = true;
+  } 
+  else if (type === 'orders') {
+    chartType = 'doughnut';
+    const statusMap = data.by_status || {};
+    chartLabels = Object.keys(statusMap).map(k => k.toUpperCase());
+    chartDatasets = [{
+      data: Object.values(statusMap),
+      backgroundColor: [
+        'rgba(139, 115, 85, 0.6)',   // pending (muted)
+        'rgba(255, 201, 60, 0.6)',   // processing (yellow)
+        'rgba(156, 90, 255, 0.6)',   // shipped (purple)
+        'rgba(46, 204, 113, 0.6)',   // delivered (green)
+        'rgba(255, 71, 87, 0.6)'     // cancelled (red)
+      ]
+    }];
+    chartOptions.plugins.legend.display = true;
+    delete chartOptions.scales; // Doughnuts do not possess axes
+  } 
+  else if (type === 'feedback') {
+    chartLabels = ['5 Stars', '4 Stars', '3 Stars', '2 Stars', '1 Star'];
+    chartDatasets = [{
+      label: 'Reviews Count',
+      data: [
+        data.five_star || 0,
+        data.four_star || 0,
+        data.three_star || 0,
+        data.two_star || 0,
+        data.one_star || 0
+      ],
+      backgroundColor: 'rgba(255, 201, 60, 0.7)',
+      borderColor: '#ffc93c',
+      borderWidth: 2
+    }];
+  } 
+  else if (type === 'support') {
+    chartType = 'pie';
+    chartLabels = ['Resolved', 'Open', 'In Progress'];
+    chartDatasets = [{
+      data: [
+        data.resolved || 0,
+        data.open || 0,
+        data.in_progress || 0
+      ],
+      backgroundColor: [
+        'rgba(46, 204, 113, 0.6)',
+        'rgba(255, 71, 87, 0.6)',
+        'rgba(255, 201, 60, 0.6)'
+      ]
+    }];
+    chartOptions.plugins.legend.display = true;
+    delete chartOptions.scales; // Pies do not possess axes
+  }
+
+  activeChartInstance = new Chart(ctx, {
+    type: chartType,
+    data: {
+      labels: chartLabels,
+      datasets: chartDatasets
+    },
+    options: chartOptions
+  });
+}
+</script>
+</body>
+</html>

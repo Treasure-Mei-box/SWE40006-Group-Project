@@ -1,0 +1,313 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1"/>
+<title>My Profile — ACE Mart</title>
+<link rel="preconnect" href="https://fonts.googleapis.com"/>
+<link href="https://fonts.googleapis.com/css2?family=Righteous&family=DM+Sans:ital,wght@0,300;0,400;0,500;0,700;1,400&display=swap" rel="stylesheet"/>
+<style>
+:root {
+  --bg:#fdf6ec; --surface:#fff9f2; --orange:#ff6b2b; --yellow:#ffc93c;
+  --green:#2ecc71; --red:#ff4757; --dark:#1a1208; --muted:#8b7355;
+  --border:#f0dfc0; --radius:18px;
+}
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+body{background:var(--bg);color:var(--dark);font-family:'DM Sans',sans-serif;min-height:100vh;}
+
+nav{
+  position:sticky;top:0;z-index:100;
+  background:rgba(253,246,236,.92);backdrop-filter:blur(12px);
+  border-bottom:2px solid var(--border);
+  padding:0 2rem;display:flex;align-items:center;gap:1rem;height:68px;
+}
+.logo{font-family:'Righteous',cursive;font-size:1.6rem;color:var(--orange);text-decoration:none;}
+.back-btn{
+  margin-left:auto;display:flex;align-items:center;gap:.4rem;
+  color:var(--muted);font-weight:500;text-decoration:none;font-size:.9rem;
+  padding:.5rem 1rem;border-radius:99px;border:2px solid var(--border);
+  transition:all .2s;
+}
+.back-btn:hover{border-color:var(--orange);color:var(--orange);}
+
+.page{max-width:900px;margin:0 auto;padding:2.5rem 1.5rem;}
+.page-title{font-family:'Righteous',cursive;font-size:2rem;margin-bottom:.25rem;}
+.page-sub{color:var(--muted);font-size:.9rem;margin-bottom:2rem;}
+
+.grid {
+  display: grid;
+  grid-template-columns: 1fr 1.2fr;
+  gap: 1.5rem;
+}
+/* Center the profile single-column for Admin/Staff */
+.grid.admin-profile {
+  grid-template-columns: 1fr;
+  max-width: 520px;
+  margin: 0 auto;
+}
+@media (max-width: 768px) {
+  .grid { grid-template-columns: 1fr !important; }
+}
+
+.card{
+  background:var(--surface);border:2px solid var(--border);
+  border-radius:var(--radius);padding:1.5rem;margin-bottom:1rem;
+}
+.card-title{font-family:'Righteous',cursive;font-size:1.15rem;margin-bottom:1.1rem;
+  display:flex;align-items:center;gap:.4rem;}
+
+.form-group{margin-bottom:.9rem;}
+.form-group label{
+  display:block;font-size:.72rem;font-weight:700;
+  color:var(--muted);text-transform:uppercase;letter-spacing:.05em;margin-bottom:.3rem;
+}
+.form-group input{
+  width:100%;padding:.65rem .9rem;border:2px solid var(--border);
+  border-radius:10px;background:var(--bg);font-family:inherit;
+  font-size:.9rem;color:var(--dark);outline:none;transition:border-color .2s;
+}
+.form-group input:focus{border-color:var(--orange);}
+.form-group input:disabled{color:var(--muted);background:rgba(240,223,192,.3);cursor:not-allowed;}
+
+.btn {
+  padding: .5rem 1.25rem; font-size: .82rem; font-weight: 700;
+  border-radius: 99px; cursor: pointer; border: none; transition: all .15s;
+  display: inline-flex; align-items: center; gap: .3rem;
+}
+.btn-primary { background: var(--orange); color: #fff; }
+.btn-primary:hover { background: #e55a1f; }
+.btn-outline { background: transparent; border: 2px solid var(--border); color: var(--muted); }
+.btn-outline:hover { border-color: var(--orange); color: var(--orange); }
+
+/* Address Manager Styles */
+.address-item {
+  display: flex; justify-content: space-between; align-items: center;
+  padding: .75rem 1rem; border: 2px solid var(--border); border-radius: 12px;
+  background: var(--bg); margin-bottom: .6rem; font-size: .88rem;
+  animation: slideIn .2s ease both;
+}
+@keyframes slideIn{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:none}}
+.address-item.active { border-color: var(--orange); background: rgba(255,107,43,.04); }
+.address-text { flex: 1; margin-right: .5rem; line-height: 1.4; }
+.address-badge {
+  background: var(--orange); color: #fff; font-size: .65rem; font-weight: 700;
+  padding: .15rem .5rem; border-radius: 99px; margin-right: .5rem; white-space: nowrap;
+}
+.address-item-actions { display: flex; gap: .25rem; }
+.item-btn {
+  background: none; border: none; cursor: pointer; font-size: .9rem;
+  padding: .25rem; opacity: .5; transition: opacity .15s;
+}
+.item-btn:hover { opacity: 1; }
+
+.add-section {
+  border-top: 1px dashed var(--border); margin-top: 1rem; padding-top: 1rem;
+}
+
+.toast{
+  position:fixed;bottom:2rem;left:50%;transform:translateX(-50%) translateY(80px);
+  background:var(--dark);color:#fff;border-radius:99px;
+  padding:.75rem 1.5rem;font-weight:600;font-size:.9rem;
+  transition:transform .35s cubic-bezier(.34,1.56,.64,1);
+  z-index:999;pointer-events:none;white-space:nowrap;
+}
+.toast.show{transform:translateX(-50%) translateY(0);}
+</style>
+</head>
+<body>
+<nav>
+  <a class="logo" href="/">ACE Mart</a>
+  <a class="back-btn" href="/">← Store</a>
+</nav>
+
+<div class="page">
+  <div class="page-title">Profile Settings</div>
+  <div class="page-sub">{{ user.username }} &nbsp;·&nbsp; Member since {{ user.created_at.strftime('%B %Y') }}</div>
+
+  <div class="grid {% if is_admin %}admin-profile{% endif %}">
+    
+    <!-- COLUMN 1: Profile Details & Password Reset -->
+    <div>
+      <!-- Account Info Card -->
+      <div class="card">
+        <div class="card-title">👤 Personal Details</div>
+        
+        <div class="form-group">
+          <label>Email Address</label>
+          <input type="text" value="{{ user.email }}" disabled/>
+        </div>
+        <div class="form-group">
+          <label>Username *</label>
+          <input type="text" id="prof-username" value="{{ user.username }}"/>
+        </div>
+        
+        <!-- Only Customer accounts possess a phone number -->
+        {% if not is_admin %}
+        <div class="form-group">
+          <label>Phone Number</label>
+          <input type="text" id="prof-phone" value="{{ user.phone }}" placeholder="e.g. 555-0100"/>
+        </div>
+        {% endif %}
+        
+        <button class="btn btn-primary" onclick="updateProfile()">Save Changes</button>
+      </div>
+
+      <!-- Password Reset Card -->
+      <div class="card">
+        <div class="card-title">🔑 Change Password</div>
+        
+        <div class="form-group">
+          <label>Current Password *</label>
+          <input type="password" id="pass-current" placeholder="••••••••"/>
+        </div>
+        <div class="form-group">
+          <label>New Password *</label>
+          <input type="password" id="pass-new" placeholder="At least 6 characters"/>
+        </div>
+        
+        <button class="btn btn-outline" onclick="changePassword()">Update Password</button>
+      </div>
+    </div>
+
+    <!-- COLUMN 2: Address Manager (Customer Only) -->
+    {% if not is_admin %}
+    <div class="card">
+      <div class="card-title">📍 Address Book</div>
+      <p style="font-size: .8rem; color: var(--muted); margin-bottom: 1rem;">
+        Add and manage shipping destinations. The highlighted card is your active delivery address.
+      </p>
+
+      <div id="address-list-container">
+        {% for addr in user.addresses %}
+        <div class="address-item {% if addr == user.address %}active{% endif %}" id="addr-box-{{ loop.index }}">
+          <div class="address-text">{{ addr }}</div>
+          {% if addr == user.address %}
+          <span class="address-badge">Active</span>
+          {% endif %}
+          
+          <div class="address-item-actions">
+            {% if addr != user.address %}
+            <button class="item-btn" onclick="setActiveAddress('{{ addr }}')" title="Set as Active">⭐</button>
+            {% endif %}
+            <button class="item-btn" onclick="deleteAddress('{{ addr }}')" title="Delete Address" style="color:var(--red);">✕</button>
+          </div>
+        </div>
+        {% endfor %}
+      </div>
+
+      <!-- Add New Address -->
+      <div class="add-section">
+        <div class="form-group" style="margin-bottom: .6rem;">
+          <label>Add New Address</label>
+          <input type="text" id="new-address-input" placeholder="e.g. Suite B, 45 Snack Avenue"/>
+        </div>
+        <button class="btn btn-outline" onclick="addAddress()">➕ Add to Book</button>
+      </div>
+    </div>
+    {% endif %}
+
+  </div>
+</div>
+
+<div class="toast" id="toast"><span id="toast-msg"></span></div>
+
+<script>
+function showToast(msg, isError=false) {
+  const t = document.getElementById('toast');
+  document.getElementById('toast-msg').textContent = msg;
+  t.style.background = isError ? 'var(--red)' : 'var(--dark)';
+  t.classList.add('show');
+  setTimeout(() => t.classList.remove('show'), 3000);
+}
+
+async function updateProfile() {
+  const username = document.getElementById('prof-username').value.trim();
+  const phoneInput = document.getElementById('prof-phone');
+  const phone = phoneInput ? phoneInput.value.trim() : '';
+  
+  if (!username) { showToast('Username cannot be blank', true); return; }
+
+  const res = await fetch('/api/customer/profile/update', {
+    method: 'POST', headers: {'Content-Type': 'application/json'},
+    body: JSON.stringify({username, phone})
+  });
+  const data = await res.json();
+  if (data.success) {
+    showToast('✓ Profile updated successfully!');
+  } else {
+    showToast('❌ ' + data.error, true);
+  }
+}
+
+async function changePassword() {
+  const current_password = document.getElementById('pass-current').value;
+  const new_password     = document.getElementById('pass-new').value;
+  
+  if (!current_password || !new_password) {
+    showToast('❌ All fields are required', true);
+    return;
+  }
+  if (new_password.length < 6) {
+    showToast('❌ Password must be at least 6 characters', true);
+    return;
+  }
+
+  const res = await fetch('/api/profile/password/reset', {
+    method: 'POST', headers: {'Content-Type': 'application/json'},
+    body: JSON.stringify({current_password, new_password})
+  });
+  const data = await res.json();
+  if (data.success) {
+    showToast('✓ Password updated successfully!');
+    document.getElementById('pass-current').value = '';
+    document.getElementById('pass-new').value = '';
+  } else {
+    showToast('❌ ' + data.error, true);
+  }
+}
+
+async function setActiveAddress(address) {
+  const res = await fetch('/api/customer/addresses/select', {
+    method: 'POST', headers: {'Content-Type': 'application/json'},
+    body: JSON.stringify({address})
+  });
+  const data = await res.json();
+  if (data.success) {
+    showToast('✓ Active address updated!');
+    setTimeout(() => location.reload(), 800);
+  }
+}
+
+async function addAddress() {
+  const address = document.getElementById('new-address-input').value.trim();
+  if (!address) return;
+
+  const res = await fetch('/api/customer/addresses/add', {
+    method: 'POST', headers: {'Content-Type': 'application/json'},
+    body: JSON.stringify({address})
+  });
+  const data = await res.json();
+  if (data.success) {
+    showToast('✓ Address added!');
+    document.getElementById('new-address-input').value = '';
+    setTimeout(() => location.reload(), 800);
+  }
+}
+
+async function deleteAddress(address) {
+  if (!confirm('Are you sure you want to delete this address?')) return;
+  const res = await fetch('/api/customer/addresses/delete', {
+    method: 'POST', headers: {'Content-Type': 'application/json'},
+    body: JSON.stringify({address})
+  });
+  const data = await res.json();
+  if (data.success) {
+    showToast('🗑️ Address removed');
+    setTimeout(() => location.reload(), 800);
+  } else {
+    showToast('❌ ' + data.error, true);
+  }
+}
+</script>
+</body>
+</html>

@@ -1,0 +1,771 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1"/>
+<title>Your Cart — ACE Mart</title>
+<link rel="preconnect" href="https://fonts.googleapis.com"/>
+<link href="https://fonts.googleapis.com/css2?family=Righteous&family=DM+Sans:ital,wght@0,300;0,400;0,500;0,700;1,400&display=swap" rel="stylesheet"/>
+<style>
+:root {
+  --bg:#fdf6ec; --surface:#fff9f2; --orange:#ff6b2b; --yellow:#ffc93c;
+  --green:#2ecc71; --red:#ff4757; --dark:#1a1208; --muted:#8b7355;
+  --border:#f0dfc0; --radius:18px;
+}
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+body{background:var(--bg);color:var(--dark);font-family:'DM Sans',sans-serif;min-height:100vh;}
+
+nav{
+  position:sticky;top:0;z-index:100;
+  background:rgba(253,246,236,.92);backdrop-filter:blur(12px);
+  border-bottom:2px solid var(--border);
+  padding:0 2rem;display:flex;align-items:center;gap:1rem;height:68px;
+}
+.logo{font-family:'Righteous',cursive;font-size:1.6rem;color:var(--orange);text-decoration:none;}
+.back-btn{
+  margin-left:auto;display:flex;align-items:center;gap:.4rem;
+  color:var(--muted);font-weight:500;text-decoration:none;font-size:.9rem;
+  padding:.5rem 1rem;border-radius:99px;border:2px solid var(--border);
+  transition:all .2s;
+}
+.back-btn:hover{border-color:var(--orange);color:var(--orange);}
+
+.page{max-width:700px;margin:0 auto;padding:2.5rem 1.5rem;}
+.page-title{font-family:'Righteous',cursive;font-size:2rem;margin-bottom:.25rem;}
+.page-sub{color:var(--muted);font-size:.9rem;margin-bottom:2rem;}
+
+/* Cart items */
+.cart-item{
+  background:var(--surface);border:2px solid var(--border);
+  border-radius:var(--radius);padding:1rem 1.25rem;margin-bottom:.75rem;
+  display:flex;align-items:center;gap:1rem;
+  animation:slideIn .3s ease both;
+}
+@keyframes slideIn{from{opacity:0;transform:translateX(-12px)}to{opacity:1;transform:none}}
+
+.item-emoji{font-size:2.2rem;flex-shrink:0;width:52px;text-align:center;}
+.item-info{flex:1;}
+.item-name{font-weight:700;font-size:.95rem;}
+.item-price{font-size:.82rem;color:var(--muted);margin-top:.15rem;}
+
+.qty-controls{display:flex;align-items:center;gap:.5rem;}
+.qty-btn{
+  width:30px;height:30px;border-radius:99px;border:2px solid var(--border);
+  background:var(--bg);font-size:1rem;cursor:pointer;
+  display:flex;align-items:center;justify-content:center;
+  transition:all .15s;font-weight:700;color:var(--dark);
+}
+.qty-btn:hover{border-color:var(--orange);color:var(--orange);}
+.qty-num{font-weight:700;font-size:.95rem;min-width:20px;text-align:center;}
+
+.item-subtotal{
+  font-family:'Righteous',cursive;font-size:1.1rem;
+  color:var(--orange);flex-shrink:0;min-width:60px;text-align:right;
+}
+.remove-btn{
+  background:none;border:none;cursor:pointer;font-size:1.1rem;
+  opacity:.4;transition:opacity .2s;padding:.25rem;
+}
+.remove-btn:hover{opacity:1;}
+
+/* Quantity Manual Input Styling */
+.qty-num-input {
+  font-weight: 700; font-size: .95rem; width: 45px; text-align: center;
+  border: 2px solid var(--border); border-radius: 8px; background: var(--bg);
+  color: var(--dark); padding: .25rem 0; outline: none; transition: border-color .15s;
+}
+.qty-num-input:focus { border-color: var(--orange); }
+/* Hide default browser spinner wheels */
+.qty-num-input::-webkit-outer-spin-button,
+.qty-num-input::-webkit-inner-spin-button {
+  -webkit-appearance: none; margin: 0;
+}
+.qty-num-input {
+  -moz-appearance: textfield;
+  appearance: textfield;
+}
+
+/* Multi-Address UI styles */
+.address-box {
+  background: var(--surface); border: 2px solid var(--border);
+  border-radius: var(--radius); padding: 1.25rem; margin-top: 1.5rem;
+}
+.address-header {
+  display: flex; justify-content: space-between; align-items: center; margin-bottom: .75rem;
+}
+.address-header h4 { font-family: 'Righteous', cursive; font-size: 1.1rem; }
+.address-select-wrap { display: flex; gap: .5rem; margin-bottom: .75rem; }
+.address-select {
+  flex: 1; padding: .6rem .85rem; border: 2px solid var(--border);
+  border-radius: 10px; background: var(--bg); font-family: inherit;
+  font-size: .88rem; color: var(--dark); outline: none; transition: border-color .2s;
+}
+.address-select:focus { border-color: var(--orange); }
+.address-actions { display: flex; gap: .5rem; }
+.addr-btn {
+  padding: .45rem 1rem; font-size: .78rem; font-weight: 700;
+  border-radius: 99px; cursor: pointer; border: none; transition: all .15s;
+}
+.addr-btn-outline { background: transparent; border: 2px solid var(--border); color: var(--muted); }
+.addr-btn-outline:hover { border-color: var(--orange); color: var(--orange); }
+.addr-form {
+  display: none; margin-top: .9rem; padding-top: .9rem; border-top: 1px dashed var(--border);
+}
+.addr-form.show { display: block; animation: slideIn .2s ease; }
+.addr-form-input {
+  width: 100%; padding: .6rem .85rem; border: 2px solid var(--border);
+  border-radius: 10px; background: var(--bg); font-family: inherit;
+  font-size: .88rem; outline: none; margin-bottom: .5rem;
+}
+.addr-form-input:focus { border-color: var(--orange); }
+
+/* Summary */
+.summary{
+  background:var(--surface);border:2px solid var(--border);
+  border-radius:var(--radius);padding:1.5rem;margin-top:1.5rem;
+}
+.summary-row{
+  display:flex;justify-content:space-between;align-items:center;
+  padding:.5rem 0;font-size:.9rem;
+}
+.summary-row.total{
+  border-top:2px solid var(--border);margin-top:.5rem;padding-top:1rem;
+  font-family:'Righteous',cursive;font-size:1.3rem;
+}
+.summary-row.total span:last-child{color:var(--orange);}
+
+.checkout-btn{
+  width:100%;margin-top:1.25rem;
+  background:var(--orange);color:#fff;
+  border:none;border-radius:99px;padding:1rem;
+  font-family:'Righteous',cursive;font-size:1.15rem;
+  cursor:pointer;transition:all .2s;
+  display:flex;align-items:center;justify-content:center;gap:.5rem;
+}
+.checkout-btn:hover{background:#e55a1f;transform:translateY(-2px);box-shadow:0 6px 24px rgba(255,107,43,.3);}
+.checkout-btn:disabled{background:var(--border);color:var(--muted);transform:none;cursor:not-allowed;}
+
+/* Empty */
+.empty{text-align:center;padding:4rem 2rem;color:var(--muted);}
+.empty .big{font-size:5rem;margin-bottom:1rem;}
+.empty h3{font-family:'Righteous',cursive;font-size:1.6rem;color:var(--dark);margin-bottom:.5rem;}
+.shop-link{
+  display:inline-block;margin-top:1.25rem;
+  background:var(--orange);color:#fff;text-decoration:none;
+  border-radius:99px;padding:.75rem 2rem;font-weight:700;
+  transition:all .2s;
+}
+.shop-link:hover{background:#e55a1f;transform:translateY(-2px);}
+
+/* ── Modals ── */
+.modal-bg{
+  display:none;position:fixed;inset:0;
+  background:rgba(26,18,8,.6);backdrop-filter:blur(4px);
+  z-index:200;align-items:center;justify-content:center;
+}
+.modal-bg.show{display:flex;}
+@keyframes popIn{from{transform:scale(.8);opacity:0}to{transform:scale(1);opacity:1}}
+
+.modal{
+  background:var(--surface);border:2px solid var(--border);
+  border-radius:24px;padding:2.5rem;text-align:center;
+  max-width:380px;width:90%;
+  animation:popIn .4s cubic-bezier(.34,1.56,.64,1);
+}
+.modal .big{font-size:4rem;margin-bottom:1rem;}
+.modal h3{font-family:'Righteous',cursive;font-size:1.5rem;margin-bottom:.5rem;}
+.modal p{color:var(--muted);font-size:.9rem;margin-bottom:1.5rem;}
+.modal-btn{
+  background:var(--orange);color:#fff;border:none;
+  border-radius:99px;padding:.75rem 2rem;
+  font-family:'Righteous',cursive;font-size:1rem;cursor:pointer;
+  transition:all .2s;
+}
+.modal-btn:hover{background:#e55a1f;}
+
+.pay-modal{
+  background:var(--surface);border:2px solid var(--border);
+  border-radius:24px;padding:2rem;
+  max-width:440px;width:92%;
+  animation:popIn .35s cubic-bezier(.34,1.56,.64,1);
+}
+.pay-title{font-family:'Righteous',cursive;font-size:1.3rem;margin-bottom:1.25rem;}
+.pay-tabs{display:flex;gap:.5rem;margin-bottom:1.25rem;}
+.pay-tab{
+  flex:1;padding:.5rem;border-radius:10px;
+  border:2px solid var(--border);background:transparent;
+  font-family:inherit;font-size:.85rem;font-weight:700;
+  color:var(--muted);cursor:pointer;transition:all .2s;text-align:center;
+}
+.pay-tab.active{border-color:var(--orange);background:rgba(255,107,43,.08);color:var(--orange);}
+.pay-panel{display:none;}
+.pay-panel.active{display:block;animation:fadeIn .2s ease;}
+@keyframes fadeIn{from{opacity:0;transform:translateY(4px)}to{opacity:1;transform:none}}
+.pay-group{margin-bottom:.85rem;}
+.pay-group label{
+  display:block;font-size:.72rem;font-weight:700;
+  color:var(--muted);text-transform:uppercase;letter-spacing:.05em;margin-bottom:.3rem;
+}
+.pay-group input,.pay-group select{
+  width:100%;padding:.65rem .9rem;border:2px solid var(--border);
+  border-radius:10px;background:var(--bg);font-family:inherit;
+  font-size:.9rem;color:var(--dark);outline:none;transition:border-color .2s;
+}
+.pay-group input:focus{border-color:var(--orange);}
+.pay-row{display:grid;grid-template-columns:1fr 1fr;gap:.65rem;}
+.pay-err{color:var(--red);font-size:.75rem;display:none;margin-top:.2rem;}
+.pay-amount{
+  background:rgba(255,107,43,.07);border:1px solid rgba(255,107,43,.2);
+  border-radius:12px;padding:.75rem 1rem;margin-bottom:1.1rem;
+  display:flex;justify-content:space-between;align-items:center;font-size:.88rem;
+}
+.pay-amount strong{font-family:'Righteous',cursive;font-size:1.2rem;color:var(--orange);}
+.demo-hint{
+  background:rgba(255,201,60,.1);border:1px solid rgba(255,201,60,.35);
+  border-radius:8px;padding:.55rem .8rem;font-size:.74rem;
+  color:#7a5c00;margin-bottom:1rem;line-height:1.6;
+}
+.pay-submit{
+  width:100%;padding:.8rem;border:none;border-radius:99px;
+  font-family:'Righteous',cursive;font-size:1.05rem;
+  background:var(--orange);color:#fff;cursor:pointer;
+  transition:all .2s;margin-top:.25rem;
+}
+.pay-submit:hover{background:#e55a1f;transform:translateY(-2px);}
+.pay-submit:disabled{background:var(--border);color:var(--muted);transform:none;cursor:not-allowed;}
+.pay-cancel{
+  width:100%;margin-top:.65rem;padding:.55rem;border:none;background:none;
+  font-family:inherit;font-size:.82rem;color:var(--muted);cursor:pointer;text-decoration:underline;
+}
+.spinner{
+  display:inline-block;width:18px;height:18px;
+  border:3px solid rgba(255,255,255,.3);border-top-color:#fff;
+  border-radius:50%;animation:spin .7s linear infinite;vertical-align:middle;
+}
+@keyframes spin{to{transform:rotate(360deg)}}
+.declined-box{
+  background:rgba(255,71,87,.06);border:2px solid rgba(255,71,87,.2);
+  border-radius:14px;padding:1.25rem;text-align:center;
+}
+.declined-box .big{font-size:3rem;margin-bottom:.5rem;}
+.declined-box h4{font-family:'Righteous',cursive;font-size:1.1rem;color:var(--red);margin-bottom:.4rem;}
+.declined-box p{font-size:.83rem;color:var(--muted);margin-bottom:1rem;line-height:1.5;}
+.retry-btn{
+  background:var(--orange);color:#fff;border:none;border-radius:99px;
+  padding:.6rem 1.5rem;font-family:'Righteous',cursive;font-size:.95rem;
+  cursor:pointer;transition:all .2s;
+}
+.retry-btn:hover{background:#e55a1f;}
+</style>
+</head>
+<body>
+<nav>
+  <a class="logo" href="/">ACE Mart</a>
+  <a class="back-btn" href="/">← Keep Shopping</a>
+</nav>
+
+<div class="page">
+  <div class="page-title">Your Cart</div>
+  <div class="page-sub">{{ customer.username }} &nbsp;·&nbsp; {{ cart.item_count() }} item(s)</div>
+
+  {% if cart.items %}
+  <div id="cart-items">
+    {% for item in cart.items.values() %}
+    <div class="cart-item" id="item-{{ item.product.product_id }}" data-price="{{ item.product.price }}" data-stock="{{ item.product.stock_quantity }}">
+      <div class="item-emoji">{{ item.product.image_url }}</div>
+      <div class="item-info">
+        <div class="item-name">{{ item.product.name }}</div>
+        <div class="item-price">${{ "%.2f"|format(item.product.price) }} each</div>
+      </div>
+      <div class="qty-controls">
+        <button class="qty-btn dec" data-id="{{ item.product.product_id }}" onclick="updateQty(this, -1)">−</button>
+        <!-- Styled input element supporting manual entry and auto-capping -->
+        <input type="number" class="qty-num-input" id="qty-{{ item.product.product_id }}" 
+               value="{{ item.quantity }}" min="1" max="{{ item.product.stock_quantity }}"
+               onchange="manualUpdateQty('{{ item.product.product_id }}', this.value)"
+               oninput="this.value=this.value.replace(/\D/g,'')"/>
+        <button class="qty-btn inc" data-id="{{ item.product.product_id }}" onclick="updateQty(this, 1)">+</button>
+      </div>
+      <div class="item-subtotal" id="sub-{{ item.product.product_id }}">${{ "%.2f"|format(item.subtotal()) }}</div>
+      <button class="remove-btn" data-id="{{ item.product.product_id }}" onclick="removeItem(this)" title="Remove">✕</button>
+    </div>
+    {% endfor %}
+  </div>
+
+  <!-- ── ADDDRESS SELECTION CARD ── -->
+  <div class="address-box">
+    <div class="address-header">
+      <h4>📍 Shipping Destination</h4>
+      <span style="font-size:.78rem;font-weight:700;color:var(--green)">✓ Selected</span>
+    </div>
+
+    <div class="address-select-wrap">
+      <select class="address-select" id="address-selector" onchange="selectAddress(this.value)">
+        {% for addr in customer.addresses %}
+        <option value="{{ addr }}" {% if addr == customer.address %}selected{% endif %}>{{ addr }}</option>
+        {% endfor %}
+      </select>
+    </div>
+
+    <div class="address-actions">
+      <button class="addr-btn addr-btn-outline" onclick="toggleAddrForm('add')">➕ Add Address</button>
+      <button class="addr-btn addr-btn-outline" onclick="toggleAddrForm('edit')">✏️ Edit Selected</button>
+    </div>
+
+    <!-- Add Form -->
+    <div class="addr-form" id="form-add-addr">
+      <input type="text" class="addr-form-input" id="new-addr-input" placeholder="e.g. Suite B, 45 Snack Avenue"/>
+      <button class="addr-btn" style="background:var(--orange);color:#fff" onclick="saveNewAddress()">Save Address</button>
+    </div>
+
+    <!-- Edit Form -->
+    <div class="addr-form" id="form-edit-addr">
+      <input type="text" class="addr-form-input" id="edit-addr-input" value="{{ customer.address }}"/>
+      <button class="addr-btn" style="background:var(--orange);color:#fff" onclick="saveEditedAddress()">Update Address</button>
+    </div>
+  </div>
+
+  <div class="summary">
+    <div class="summary-row">
+      <span>Subtotal</span><span id="subtotal">${{ "%.2f"|format(cart.total()) }}</span>
+    </div>
+    <div class="summary-row">
+      <span>Shipping</span>
+      <span id="shipping">{% if cart.total() >= 25 %}<span style="color:var(--green);font-weight:700">FREE</span>{% else %}$3.99{% endif %}</span>
+    </div>
+    <div class="summary-row total">
+      <span>Total</span>
+      <span id="grand-total">${{ "%.2f"|format(cart.total() + (0 if cart.total() >= 25 else 3.99)) }}</span>
+    </div>
+    <button class="checkout-btn" id="checkout-btn" onclick="checkout()">
+      Place Order — $<span id="btn-total">{{ "%.2f"|format(cart.total() + (0 if cart.total() >= 25 else 3.99)) }}</span>
+    </button>
+  </div>
+
+  {% else %}
+  <div class="empty">
+    <div class="big">🛒</div>
+    <h3>Your cart is empty!</h3>
+    <p>Looks like you haven't added any snacks yet.</p>
+    <a class="shop-link" href="/">Browse Snacks</a>
+  </div>
+  {% endif %}
+</div>
+
+<!-- ── SUCCESS MODAL ── -->
+<div class="modal-bg" id="modal-success">
+  <div class="modal">
+    <h3>Order Confirmed!</h3>
+    <p id="success-msg">Your snacks are being packed and will be on their way soon!</p>
+    <div style="font-size:.78rem;color:var(--muted);margin-bottom:1.25rem;" id="success-details"></div>
+    <button class="modal-btn" onclick="window.location='/orders'">View My Orders</button>
+  </div>
+</div>
+
+<!-- ── PAYMENT GATEWAY MODAL ── -->
+<div class="modal-bg" id="modal-payment">
+  <div class="pay-modal">
+    <div class="pay-title">Payment</div>
+
+    <!-- Amount due -->
+    <div class="pay-amount">
+      <span>Amount Due</span>
+      <strong id="pay-total">$0.00</strong>
+    </div>
+
+    <!-- Demo hint -->
+    <div class="demo-hint">
+      <strong>Demo:</strong> Use any details to pay. Enter card <code>0000 0000 0000 0000</code>
+      or wallet ID <code>fail</code> to simulate a <strong>declined</strong> transaction.
+    </div>
+
+    <!-- Method tabs -->
+    <div class="pay-tabs" id="pay-tabs">
+      <button class="pay-tab active" id="tab-cc"  onclick="setPayTab('cc')">Credit Card</button>
+      <button class="pay-tab"        id="tab-ew"  onclick="setPayTab('ew')">E-Wallet</button>
+    </div>
+
+    <!-- Credit Card panel -->
+    <div class="pay-panel active" id="panel-cc">
+      <div class="pay-group">
+        <label>Card Number *</label>
+        <input type="text" id="cc-num" placeholder="1234 5678 9012 3456" maxlength="19"
+               oninput="formatCard(this)"/>
+        <span class="pay-err" id="err-cc-num">Card number is required</span>
+      </div>
+      <div class="pay-row">
+        <div class="pay-group">
+          <label>Expiry *</label>
+          <input type="text" id="cc-exp" placeholder="MM/YY" maxlength="5"
+                 oninput="formatExpiry(this)"/>
+          <span class="pay-err" id="err-cc-exp">Expiry is required</span>
+        </div>
+        <div class="pay-group">
+          <label>CVV *</label>
+          <input type="password" id="cc-cvv" placeholder="•••" maxlength="4"/>
+          <span class="pay-err" id="err-cc-cvv">CVV must be 3–4 digits</span>
+        </div>
+      </div>
+      <div class="pay-group">
+        <label>Cardholder Name</label>
+        <input type="text" id="cc-name" placeholder="Alex Kim"/>
+      </div>
+    </div>
+
+    <!-- E-Wallet panel -->
+    <div class="pay-panel" id="panel-ew">
+      <div class="pay-group">
+        <label>Provider</label>
+        <select id="ew-provider">
+          <option value="TouchNGo">Touch 'n Go eWallet</option>
+          <option value="GrabPay">GrabPay</option>
+          <option value="Boost">Boost</option>
+          <option value="ShopeePay">ShopeePay</option>
+        </select>
+      </div>
+      <div class="pay-group">
+        <label>Wallet ID / Phone Number *</label>
+        <input type="text" id="ew-id" placeholder="e.g. 0123456789"/>
+        <span class="pay-err" id="err-ew-id">Wallet ID is required</span>
+      </div>
+    </div>
+
+    <!-- Processing / declined state (hidden by default) -->
+    <div id="pay-declined" style="display:none;">
+      <div class="declined-box">
+        <div class="big">❌</div>
+        <h4>Payment Declined</h4>
+        <p id="decline-msg">Your payment could not be processed. Please check your details or try a different payment method.</p>
+        <button class="retry-btn" onclick="resetPayModal()">Try Again</button>
+      </div>
+    </div>
+
+    <div id="pay-form-actions">
+      <button class="pay-submit" id="pay-submit-btn" onclick="submitPayment()">
+        Pay Now
+      </button>
+      <button class="pay-cancel" onclick="closePayModal()">Cancel</button>
+    </div>
+  </div>
+</div>
+
+<script>
+// ── State ──
+let currentOrderId = null;
+let currentPayTab  = 'cc';
+
+// ── Qty / Remove / Totals ──
+// Handles quantity updates triggered by +/- buttons
+async function updateQty(btn, delta) {
+  const pid      = btn.dataset.id;
+  const card     = document.getElementById('item-' + pid);
+  const price    = parseFloat(card.dataset.price);
+  const maxStock = parseInt(card.dataset.stock);
+  const qtyInput = document.getElementById('qty-' + pid); // Now reads input field
+  const subSpan  = document.getElementById('sub-' + pid);
+  const newQty   = parseInt(qtyInput.value) + delta;
+  
+  if (newQty < 1) { removeItem({dataset:{id:pid}}); return; }
+  
+  // Client-side stock ceiling validation
+  if (newQty > maxStock) {
+    alert(`Only ${maxStock} units of this snack are available in our inventory!`);
+    return;
+  }
+  
+  const res  = await fetch('/api/cart/update', {
+    method:'POST', headers:{'Content-Type':'application/json'},
+    body: JSON.stringify({product_id: pid, quantity: newQty})
+  });
+  const data = await res.json();
+  if (data.success) { 
+    qtyInput.value = newQty; 
+    subSpan.textContent = '$' + (price * newQty).toFixed(2);
+    refreshTotals(data.total); 
+  } else {
+    alert(data.error || 'Failed to update quantity.');
+  }
+}
+
+// Handles quantity updates triggered by direct keyboard typing
+async function manualUpdateQty(pid, val) {
+  const card     = document.getElementById('item-' + pid);
+  const price    = parseFloat(card.dataset.price);
+  const maxStock = parseInt(card.dataset.stock);
+  const qtyInput = document.getElementById('qty-' + pid);
+  const subSpan  = document.getElementById('sub-' + pid);
+  
+  let newQty = parseInt(val);
+  
+  // Fallback to 1 if input is empty, invalid, or negative
+  if (isNaN(newQty) || newQty < 1) {
+    newQty = 1;
+  }
+  
+  // Stock validation and automatic capping
+  if (newQty > maxStock) {
+    alert(`Only ${maxStock} units of this snack are available in our inventory! Capping at ${maxStock}.`);
+    newQty = maxStock;
+  }
+  
+  // Enforce the validated value on the input field instantly
+  qtyInput.value = newQty;
+  
+  const res  = await fetch('/api/cart/update', {
+    method:'POST', headers:{'Content-Type':'application/json'},
+    body: JSON.stringify({product_id: pid, quantity: newQty})
+  });
+  const data = await res.json();
+  if (data.success) { 
+    subSpan.textContent = '$' + (price * newQty).toFixed(2);
+    refreshTotals(data.total); 
+  } else {
+    alert(data.error || 'Failed to update quantity.');
+    location.reload();
+  }
+}
+
+async function removeItem(btn) {
+  const pid = btn.dataset.id;
+  const el  = document.getElementById('item-'+pid);
+  el.style.opacity = '0'; el.style.transform = 'translateX(20px)';
+  el.style.transition = 'all .3s';
+  setTimeout(async () => {
+    const res  = await fetch('/api/cart/remove', {
+      method:'POST', headers:{'Content-Type':'application/json'},
+      body: JSON.stringify({product_id: pid})
+    });
+    const data = await res.json();
+    el.remove();
+    refreshTotals(data.total);
+    if (data.item_count === 0) location.reload();
+  }, 300);
+}
+
+function refreshTotals(subtotal) {
+  const shipping = subtotal >= 25 ? 0 : 3.99;
+  const grand    = subtotal + shipping;
+  document.getElementById('subtotal').textContent    = '$' + subtotal.toFixed(2);
+  document.getElementById('grand-total').textContent = '$' + grand.toFixed(2);
+  document.getElementById('btn-total').textContent   = grand.toFixed(2);
+  document.getElementById('shipping').innerHTML = shipping === 0
+    ? '<span style="color:var(--green);font-weight:700">FREE</span>'
+    : '$3.99';
+}
+
+// ── Multi-Address Operations ──
+function toggleAddrForm(type) {
+  const addForm  = document.getElementById('form-add-addr');
+  const editForm = document.getElementById('form-edit-addr');
+  if (type === 'add') {
+    editForm.classList.remove('show');
+    addForm.classList.toggle('show');
+    document.getElementById('new-addr-input').focus();
+  } else {
+    addForm.classList.remove('show');
+    editForm.classList.toggle('show');
+    document.getElementById('edit-addr-input').focus();
+  }
+}
+
+async function selectAddress(address) {
+  const res = await fetch('/api/customer/addresses/select', {
+    method: 'POST', headers: {'Content-Type': 'application/json'},
+    body: JSON.stringify({address})
+  });
+  const data = await res.json();
+  if (data.success) {
+    document.getElementById('edit-addr-input').value = data.active;
+  }
+}
+
+async function saveNewAddress() {
+  const address = document.getElementById('new-addr-input').value.trim();
+  if (!address) return;
+  const res = await fetch('/api/customer/addresses/add', {
+    method: 'POST', headers: {'Content-Type': 'application/json'},
+    body: JSON.stringify({address})
+  });
+  const data = await res.json();
+  if (data.success) {
+    updateAddressDropdown(data.addresses, data.active);
+    document.getElementById('new-addr-input').value = '';
+    document.getElementById('form-add-addr').classList.remove('show');
+  }
+}
+
+async function saveEditedAddress() {
+  const old_address = document.getElementById('address-selector').value;
+  const new_address = document.getElementById('edit-addr-input').value.trim();
+  if (!new_address || old_address === new_address) return;
+  const res = await fetch('/api/customer/addresses/edit', {
+    method: 'POST', headers: {'Content-Type': 'application/json'},
+    body: JSON.stringify({old_address, new_address})
+  });
+  const data = await res.json();
+  if (data.success) {
+    updateAddressDropdown(data.addresses, data.active);
+    document.getElementById('form-edit-addr').classList.remove('show');
+  }
+}
+
+function updateAddressDropdown(addresses, active) {
+  const selector = document.getElementById('address-selector');
+  selector.innerHTML = '';
+  addresses.forEach(addr => {
+    const opt = document.createElement('option');
+    opt.value = addr; opt.textContent = addr;
+    if (addr === active) opt.selected = true;
+    selector.appendChild(opt);
+  });
+  document.getElementById('edit-addr-input').value = active;
+}
+
+// ── A2 Scenario 1 Step 7: Checkout ──
+async function checkout() {
+  const btn = document.getElementById('checkout-btn');
+  const savedTotal = (document.getElementById('btn-total') || {}).textContent || '0.00';
+  btn.disabled = true;
+  btn.innerHTML = '<span class="spinner"></span> Preparing order…';
+  try {
+    const res = await fetch('/api/cart/checkout', {
+      method: 'POST', headers: {'Content-Type': 'application/json'}, body: '{}'
+    });
+    if (res.redirected || res.headers.get('content-type')?.includes('text/html')) {
+      window.location.href = '/login'; return;
+    }
+    const data = await res.json();
+    if (data.login_required) { window.location.href = '/login'; return; }
+    if (data.success) {
+      currentOrderId = data.order_id;
+      document.getElementById('pay-total').textContent = '$' + parseFloat(data.total).toFixed(2);
+      openPayModal();
+      btn.disabled = false;
+      btn.innerHTML = 'Place Order — $<span id="btn-total">' + parseFloat(data.total).toFixed(2) + '</span>';
+    } else {
+      const errMsg = data.error || 'Something went wrong';
+      btn.innerHTML = errMsg;
+      setTimeout(() => {
+        btn.disabled = false;
+        btn.innerHTML = 'Place Order — $<span id="btn-total">' + savedTotal + '</span>';
+      }, 2500);
+    }
+  } catch(e) {
+    btn.disabled = false;
+    btn.innerHTML = 'Place Order — $<span id="btn-total">' + savedTotal + '</span>';
+    console.error("Checkout failed:", e);
+    alert("A connection or server error occurred. Please try again.");
+  }
+}
+
+// ── Payment modal ──
+function openPayModal() {
+  resetPayModal();
+  document.getElementById('modal-payment').classList.add('show');
+}
+function closePayModal() {
+  document.getElementById('modal-payment').classList.remove('show');
+  const btn = document.getElementById('checkout-btn');
+  btn.disabled = false;
+  const grand = (document.getElementById('grand-total') || {}).textContent || '';
+  btn.innerHTML = 'Place Order — $<span id="btn-total">' + grand.replace('$','') + '</span>';
+}
+
+function setPayTab(tab) {
+  currentPayTab = tab;
+  document.getElementById('panel-cc').classList.toggle('active', tab === 'cc');
+  document.getElementById('panel-ew').classList.toggle('active', tab === 'ew');
+  document.getElementById('tab-cc').classList.toggle('active', tab === 'cc');
+  document.getElementById('tab-ew').classList.toggle('active', tab === 'ew');
+  clearPayErrors();
+}
+
+function resetPayModal() {
+  document.getElementById('pay-declined').style.display  = 'none';
+  document.getElementById('pay-form-actions').style.display = '';
+  document.getElementById('panel-cc').style.display = '';
+  document.getElementById('panel-ew').style.display = '';
+  document.getElementById('pay-tabs').style.display = '';
+  const btn = document.getElementById('pay-submit-btn');
+  btn.disabled = false; btn.innerHTML = 'Pay Now';
+  clearPayErrors();
+}
+
+function clearPayErrors() {
+  ['err-cc-num','err-cc-exp','err-cc-cvv','err-ew-id'].forEach(id => {
+    document.getElementById(id).style.display = 'none';
+  });
+}
+
+function formatCard(input) {
+  let v = input.value.replace(/\D/g,'').substring(0,16);
+  input.value = v.replace(/(.{4})/g,'$1 ').trim();
+}
+function formatExpiry(input) {
+  let v = input.value.replace(/\D/g,'');
+  if (v.length >= 2) v = v.substring(0,2) + '/' + v.substring(2,4);
+  input.value = v;
+}
+
+// ── A2 Scenario 1 Steps 11-24: Process Payment ──
+async function submitPayment() {
+  clearPayErrors();
+  const btn = document.getElementById('pay-submit-btn');
+
+  // Validate inputs
+  let valid = true;
+  if (currentPayTab === 'cc') {
+    const num = document.getElementById('cc-num').value.trim();
+    const exp = document.getElementById('cc-exp').value.trim();
+    const cvv = document.getElementById('cc-cvv').value.trim();
+    if (!num) { document.getElementById('err-cc-num').style.display='block'; valid=false; }
+    if (!exp) { document.getElementById('err-cc-exp').style.display='block'; valid=false; }
+    if (!cvv || !/^\d{3,4}$/.test(cvv)) { document.getElementById('err-cc-cvv').style.display='block'; valid=false; }
+  } else {
+    const wid = document.getElementById('ew-id').value.trim();
+    if (!wid) { document.getElementById('err-ew-id').style.display='block'; valid=false; }
+  }
+  if (!valid) return;
+
+  btn.disabled = true;
+  btn.innerHTML = '<span class="spinner"></span> Processing…';
+
+  let payload = { order_id: currentOrderId, gateway: currentPayTab === 'cc' ? 'credit_card' : 'ewallet' };
+  if (currentPayTab === 'cc') {
+    payload.card_number = document.getElementById('cc-num').value.trim();
+    payload.expiry      = document.getElementById('cc-exp').value.trim();
+    payload.cvv         = document.getElementById('cc-cvv').value.trim();
+  } else {
+    payload.wallet_id = document.getElementById('ew-id').value.trim();
+    payload.provider  = document.getElementById('ew-provider').value;
+  }
+
+  try {
+    const res  = await fetch('/api/payment/process', {
+      method:'POST', headers:{'Content-Type':'application/json'},
+      body: JSON.stringify(payload)
+    });
+    const data = await res.json();
+
+    if (data.success) {
+      document.getElementById('modal-payment').classList.remove('show');
+      document.getElementById('success-details').innerHTML =
+        'Invoice: <code>' + (data.invoice_id||'').substring(0,8).toUpperCase() + '</code>' +
+        '&nbsp;&nbsp;Tracking: <code>' + (data.tracking||'N/A') + '</code>';
+      document.getElementById('modal-success').classList.add('show');
+    } else {
+      document.getElementById('pay-declined').style.display = 'block';
+      document.getElementById('pay-form-actions').style.display = 'none';
+      document.getElementById('panel-cc').style.display = 'none';
+      document.getElementById('panel-ew').style.display = 'none';
+      document.getElementById('pay-tabs').style.display = 'none';
+      document.getElementById('decline-msg').textContent =
+        data.error || 'Payment declined. Please try a different method.';
+    }
+  } catch(e) {
+    btn.disabled = false; btn.innerHTML = 'Pay Now';
+  }
+}
+</script>
+</body>
+</html>

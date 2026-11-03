@@ -1,0 +1,534 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1"/>
+<title>ACE Mart — Snacks For Every Craving</title>
+<link rel="preconnect" href="https://fonts.googleapis.com"/>
+<link href="https://fonts.googleapis.com/css2?family=Righteous&family=DM+Sans:ital,wght@0,300;0,400;0,500;0,700;1,400&display=swap" rel="stylesheet"/>
+<style>
+:root {
+  --bg:       #fdf6ec;
+  --surface:  #fff9f2;
+  --orange:   #ff6b2b;
+  --yellow:   #ffc93c;
+  --green:    #2ecc71;
+  --red:      #ff4757;
+  --dark:     #1a1208;
+  --muted:    #8b7355;
+  --border:   #f0dfc0;
+  --radius:   18px;
+  --shadow:   0 4px 24px rgba(255,107,43,.12);
+}
+
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+body {
+  background: var(--bg);
+  color: var(--dark);
+  font-family: 'DM Sans', sans-serif;
+  min-height: 100vh;
+  background-image:
+    radial-gradient(circle at 10% 20%, rgba(255,201,60,.15) 0%, transparent 40%),
+    radial-gradient(circle at 90% 80%, rgba(255,107,43,.10) 0%, transparent 40%);
+}
+
+/* ── TOP NAV ── */
+nav {
+  position: sticky; top: 0; z-index: 100;
+  background: rgba(253,246,236,.92);
+  backdrop-filter: blur(12px);
+  border-bottom: 2px solid var(--border);
+  padding: 0 2rem;
+  display: flex; align-items: center; gap: 1rem;
+  height: 68px;
+}
+
+.logo {
+  font-family: 'Righteous', cursive;
+  font-size: 1.6rem;
+  color: var(--orange);
+  text-decoration: none;
+  letter-spacing: -.01em;
+  display: flex; align-items: center; gap: .4rem;
+  flex-shrink: 0;
+}
+.logo span { font-size: 1.4rem; }
+
+.search-wrap {
+  flex: 1; max-width: 420px; margin: 0 auto;
+  position: relative;
+}
+.search-wrap input {
+  width: 100%; padding: .6rem 1rem .6rem 2.6rem;
+  border: 2px solid var(--border); border-radius: 99px;
+  background: var(--surface); font-family: inherit; font-size: .9rem;
+  color: var(--dark); outline: none; transition: border-color .2s;
+}
+.search-wrap input:focus { border-color: var(--orange); }
+.search-wrap::before {
+  content: ''; position: absolute; left: 1rem; top: 50%;
+  transform: translateY(-50%); width: 15px; height: 15px;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23718096' stroke-width='2.5' stroke-linecap='round' stroke-linejoin='round'%3E%3Ccircle cx='11' cy='11' r='8'%3E%3C/circle%3E%3Cline x1='21' y1='21' x2='16.65' y2='16.65'%3E%3C/line%3E%3C/svg%3E");
+  background-repeat: no-repeat; background-size: contain; pointer-events: none; opacity: .7;
+}
+
+.nav-actions { display: flex; align-items: center; gap: .75rem; margin-left: auto; flex-shrink: 0; }
+
+.cart-btn {
+  display: flex; align-items: center; gap: .5rem;
+  background: var(--orange); color: #fff;
+  border: none; border-radius: 99px; padding: .55rem 1.2rem;
+  font-family: inherit; font-size: .9rem; font-weight: 700;
+  cursor: pointer; text-decoration: none; transition: all .2s;
+  position: relative;
+}
+.cart-btn:hover { background: #e55a1f; transform: translateY(-1px); }
+.cart-count {
+  background: var(--yellow); color: var(--dark);
+  border-radius: 99px; font-size: .72rem; font-weight: 700;
+  padding: .1rem .45rem; min-width: 20px; text-align: center;
+}
+
+.orders-link {
+  color: var(--muted); font-weight: 500; text-decoration: none;
+  font-size: .88rem; padding: .5rem .75rem; border-radius: 99px;
+  transition: all .2s;
+}
+.orders-link:hover { background: var(--border); color: var(--dark); }
+
+/* ── HERO ── */
+.hero {
+  text-align: center; padding: 3.5rem 2rem 2rem;
+  position: relative;
+}
+.hero-eyebrow {
+  font-size: .8rem; font-weight: 700; letter-spacing: .15em;
+  text-transform: uppercase; color: var(--orange);
+  margin-bottom: .75rem;
+}
+.hero h1 {
+  font-family: 'Righteous', cursive;
+  font-size: clamp(2.2rem, 5vw, 3.8rem);
+  line-height: 1.1; color: var(--dark);
+  margin-bottom: .75rem;
+}
+.hero h1 em { color: var(--orange); font-style: normal; }
+.hero p {
+  color: var(--muted); font-size: 1.05rem; max-width: 480px; margin: 0 auto 1.5rem;
+}
+
+/* Floating snack emojis */
+.floaters { position: absolute; inset: 0; pointer-events: none; overflow: hidden; }
+.floater {
+  position: absolute; font-size: 2rem; opacity: .18;
+  animation: float 6s ease-in-out infinite;
+}
+.floater:nth-child(1) { top: 10%; left: 5%;  animation-delay: 0s; }
+.floater:nth-child(2) { top: 20%; right: 8%; animation-delay: 1s; }
+.floater:nth-child(3) { top: 60%; left: 3%;  animation-delay: 2s; }
+.floater:nth-child(4) { top: 70%; right: 5%; animation-delay: 1.5s; }
+.floater:nth-child(5) { top: 40%; left: 12%; animation-delay: .5s; }
+.floater:nth-child(6) { top: 35%; right: 12%;animation-delay: 2.5s; }
+@keyframes float {
+  0%,100% { transform: translateY(0) rotate(-5deg); }
+  50%      { transform: translateY(-18px) rotate(5deg); }
+}
+
+/* ── CATEGORY PILLS ── */
+.cats {
+  display: flex; flex-wrap: wrap; justify-content: center;
+  gap: .5rem; padding: 0 2rem 2rem;
+}
+.cat-pill {
+  padding: .45rem 1.1rem; border-radius: 99px;
+  border: 2px solid var(--border); background: var(--surface);
+  color: var(--muted); font-size: .85rem; font-weight: 500;
+  text-decoration: none; transition: all .2s; cursor: pointer;
+  display: flex; align-items: center; gap: .35rem;
+}
+.cat-pill:hover, .cat-pill.active {
+  border-color: var(--orange); background: var(--orange);
+  color: #fff; transform: translateY(-2px);
+}
+
+/* ── PRODUCT GRID ── */
+.section-label {
+  padding: 0 2rem .75rem;
+  font-size: .75rem; font-weight: 700; letter-spacing: .12em;
+  text-transform: uppercase; color: var(--muted);
+  display: flex; align-items: center; gap: .75rem;
+}
+.section-label::after { content:''; flex:1; height:1px; background:var(--border); }
+
+.grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+  gap: 1.25rem; padding: 0 2rem 3rem;
+}
+
+.card {
+  background: var(--surface); border: 2px solid var(--border);
+  border-radius: var(--radius); overflow: hidden;
+  transition: all .25s; animation: popIn .4s ease both;
+  display: flex; flex-direction: column;
+}
+.card:hover {
+  border-color: var(--orange); transform: translateY(-4px);
+  box-shadow: var(--shadow);
+}
+@keyframes popIn {
+  from { opacity:0; transform: scale(.94) translateY(10px); }
+  to   { opacity:1; transform: scale(1) translateY(0); }
+}
+
+.card-emoji {
+  font-size: 3.5rem; text-align: center;
+  padding: 1.5rem 1rem .75rem;
+  background: linear-gradient(160deg, var(--bg) 0%, var(--border) 100%);
+  position: relative; overflow: hidden;
+}
+.card-emoji::before {
+  content: ''; position: absolute; inset: 0;
+  background: radial-gradient(circle at 50% 60%, rgba(255,201,60,.2), transparent 70%);
+}
+
+.oos-overlay {
+  position: absolute; inset: 0;
+  background: rgba(253,246,236,.75); backdrop-filter: blur(2px);
+  display: flex; align-items: center; justify-content: center;
+  font-size: .75rem; font-weight: 700; letter-spacing: .1em;
+  text-transform: uppercase; color: var(--red);
+  border-radius: 2px;
+}
+
+.card-body { padding: 1rem; flex: 1; display: flex; flex-direction: column; gap: .4rem; }
+.card-name { font-weight: 700; font-size: .95rem; line-height: 1.3; }
+.card-desc { font-size: .78rem; color: var(--muted); line-height: 1.4; flex: 1; }
+.card-foot {
+  display: flex; align-items: center; justify-content: space-between;
+  padding: .75rem 1rem; border-top: 1px solid var(--border);
+}
+.card-price { font-family: 'Righteous', cursive; font-size: 1.15rem; color: var(--orange); }
+
+.add-btn {
+  background: var(--dark); color: #fff;
+  border: none; border-radius: 99px;
+  padding: .4rem .9rem; font-family: inherit;
+  font-size: .8rem; font-weight: 700; cursor: pointer;
+  transition: all .2s; display: flex; align-items: center; gap: .3rem;
+}
+.add-btn:hover { background: var(--orange); transform: scale(1.05); }
+.add-btn:active { transform: scale(.97); }
+.add-btn.added { background: var(--green); }
+.add-btn:disabled { background: var(--border); color: var(--muted); cursor: not-allowed; transform: none; }
+
+/* ── TOAST ── */
+.toast {
+  position: fixed; bottom: 2rem; left: 50%; transform: translateX(-50%) translateY(80px);
+  background: var(--dark); color: #fff; border-radius: 99px;
+  padding: .75rem 1.5rem; font-weight: 600; font-size: .9rem;
+  display: flex; align-items: center; gap: .5rem;
+  transition: transform .35s cubic-bezier(.34,1.56,.64,1);
+  z-index: 999; pointer-events: none; white-space: nowrap;
+}
+.toast.show { transform: translateX(-50%) translateY(0); }
+
+/* ── EMPTY STATE ── */
+.empty {
+  text-align: center; padding: 4rem 2rem; color: var(--muted);
+}
+.empty .big { font-size: 4rem; margin-bottom: 1rem; }
+.empty h3 { font-family: 'Righteous', cursive; font-size: 1.4rem; color: var(--dark); margin-bottom: .5rem; }
+
+/* ── FOOTER ── */
+footer {
+  text-align: center; padding: 2rem;
+  border-top: 2px solid var(--border);
+  color: var(--muted); font-size: .82rem;
+}
+footer strong { color: var(--orange); font-family: 'Righteous', cursive; }
+</style>
+</head>
+<body>
+
+<!-- NAV -->
+<nav>
+  <a class="logo" href="/">ACE Mart</a>
+
+  <div class="search-wrap">
+    <form method="get" action="/">
+      <input name="q" type="text" placeholder="Search snacks…" value="{{ search_q }}"/>
+    </form>
+  </div>
+
+  <div class="nav-actions">
+    {% if user_role in ('manager', 'staff', 'admin') %}
+      {# Staff / admin view — prominently styled Admin Panel toggle #}
+      <a class="orders-link" href="/admin" style="font-weight:700;color:var(--orange);border-color:var(--orange);">Admin Panel</a>
+      <a class="orders-link" href="/logout" style="color:var(--red);">Sign Out</a>
+    {% elif user_role == 'customer' %}
+      {# Logged-in customer — no admin icon #}
+      <a class="orders-link" href="/support">Support</a>
+      <a class="orders-link" href="/orders">My Orders</a>
+      <a class="orders-link" href="/profile">Profile</a>
+      <!-- Real-time Order Status Notification Bell -->
+      <div style="position:relative;cursor:pointer;margin-right:.5rem;display:inline-flex;align-items:center;" id="cust-bell-wrapper">
+        <span onclick="toggleCustNotifications(event)" style="display:inline-flex;align-items:center;">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="color:var(--muted);"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"></path><path d="M13.73 21a2 2 0 0 1-3.46 0"></path></svg>
+        </span>
+        <span id="cust-notif-badge" style="display:none;position:absolute;top:-4px;right:-6px;background:var(--red);color:#fff;font-size:.65rem;font-weight:700;border-radius:99px;padding:.1rem .35rem;min-width:18px;text-align:center;" onclick="toggleCustNotifications(event)">0</span>
+        
+        <!-- Notification Dropdown Menu -->
+        <div id="cust-notif-dropdown" style="display:none;position:absolute;top:38px;right:0;width:300px;background:var(--surface);border:2px solid var(--border);border-radius:12px;box-shadow:var(--shadow);z-index:150;padding:.75rem 1rem;text-align:left;">
+          <div style="font-family:'Righteous',cursive;font-size:.95rem;margin-bottom:.5rem;display:flex;justify-content:space-between;align-items:center;">
+            <span>Notifications</span>
+            <button style="background:none;border:none;color:var(--orange);font-size:.72rem;font-weight:700;cursor:pointer;" onclick="markCustNotifsRead(event)">Mark all read</button>
+          </div>
+          <div id="cust-notif-list" style="max-height:220px;overflow-y:auto;font-size:.82rem;display:flex;flex-direction:column;gap:.35rem;">
+            <div style="color:var(--muted);text-align:center;padding:1rem 0;">No active alerts.</div>
+          </div>
+        </div>
+      </div>
+      <a class="orders-link" href="/logout" style="color:var(--red);">Sign Out</a>
+      <a class="cart-btn" href="/cart">
+        Cart
+        <span class="cart-count" id="cart-count">{{ cart.item_count() if cart else 0 }}</span>
+      </a>
+    {% else %}
+      {# Guest — show sign in + admin link #}
+      <a class="orders-link" href="/login?mode=staff">Admin</a>  <!-- Points directly to staff portal -->
+      <a class="orders-link" href="/login" style="font-weight:700;color:var(--orange);">Sign In</a>
+      <a class="cart-btn" href="/login">
+        Cart
+        <span class="cart-count" id="cart-count">0</span>
+      </a>
+    {% endif %}
+  </div>
+</nav>
+
+<!-- HERO -->
+{% if not search_q %}
+<div class="hero">
+  <div class="floaters">
+    <div class="floater">🍟</div><div class="floater">🍫</div>
+    <div class="floater">🥜</div><div class="floater">🍬</div>
+    <div class="floater">🍿</div><div class="floater">🌶️</div>
+  </div>
+  <div class="hero-eyebrow">Free shipping on orders over $25</div>
+  <h1>Snacks For <em>Every</em><br>Craving & Mood</h1>
+  <p>Curated international snacks delivered to your door. New drops every week.</p>
+</div>
+{% endif %}
+
+<!-- CATEGORIES -->
+<div class="cats">
+  <a class="cat-pill {% if cat_filter == 'all' %}active{% endif %}" href="/">🌟 All Snacks</a>
+  {% for cat in categories %}
+    <!-- Filter out inactive categories from shopper catalog view -->
+    {% if cat.is_active %}
+    <a class="cat-pill {% if cat_filter == cat.category_id %}active{% endif %}"
+       href="/?category={{ cat.category_id }}">{{ cat.name }}</a>
+    {% endif %}
+  {% endfor %}
+</div>
+
+<!-- SECTION LABEL -->
+<div class="section-label">
+  {% if search_q %}
+    Search results for "{{ search_q }}" — {{ products|length }} found
+  {% elif cat_filter != 'all' %}
+    {% for cat in categories %}{% if cat.category_id == cat_filter %}{{ cat.name }}{% endif %}{% endfor %}
+    — {{ products|length }} products
+  {% else %}
+    All Snacks — {{ products|length }} products
+  {% endif %}
+</div>
+
+<!-- PRODUCT GRID -->
+{% if products %}
+<div class="grid">
+  {% for p in products %}
+  <div class="card" data-delay="{{ loop.index0 }}">
+    <div class="card-emoji">
+      {{ p.image_url }}
+      {% if not p.is_available() %}
+      <div class="oos-overlay">Sold Out</div>
+      {% endif %}
+    </div>
+    <div class="card-body">
+      <div class="card-name">{{ p.name }}</div>
+      <div class="card-desc">{{ p.description }}</div>
+    </div>
+    <div class="card-foot">
+      <div class="card-price">${{ "%.2f"|format(p.price) }}</div>
+      
+      <!-- Only render the Add to Cart button for Guests or Customers (hide from Manager & Staff) -->
+      {% if user_role not in ('manager', 'staff', 'admin') %}
+      <button class="add-btn"
+              data-id="{{ p.product_id }}"
+              data-name="{{ p.name | e }}"
+              onclick="addToCart(this)"
+              {% if not p.is_available() %}disabled{% endif %}>
+        {% if p.is_available() %}＋ Add{% else %}Sold Out{% endif %}
+      </button>
+      {% endif %}
+    </div>
+  </div>
+  {% endfor %}
+</div>
+{% else %}
+<div class="empty">
+  <div class="big">🤷</div>
+  <h3>No snacks found</h3>
+  <p>Try a different search or browse all categories.</p>
+</div>
+{% endif %}
+
+<footer>
+  <strong>ACE Mart</strong> &nbsp;·&nbsp; {{ products|length }} snacks available
+  <!-- &nbsp;·&nbsp; Built with Python &amp; Flask &nbsp;🐍 -->
+</footer>
+
+<!-- TOAST -->
+<div class="toast" id="toast"><span id="toast-msg">Added to cart!</span></div>
+<div id="store-data" data-cart-count="{{ cart.item_count() if cart else 0 }}" data-logged-in="{{ 'true' if is_logged_in else 'false' }}" hidden></div>
+
+<script>
+let cartCount = parseInt(document.getElementById('store-data').dataset.cartCount, 10);
+const isLoggedIn = document.getElementById('store-data').dataset.loggedIn === 'true';
+
+// Apply staggered animation delays from data attribute
+document.querySelectorAll('.card[data-delay]').forEach(card => {
+  card.style.animationDelay = (parseInt(card.dataset.delay) * 0.05) + 's';
+});
+
+async function addToCart(btn) {
+  // Redirect to login if not authenticated
+  if (!isLoggedIn) {
+    showToast('Please sign in to add items to cart');
+    setTimeout(() => window.location.href = '/login', 1000);
+    return;
+  }
+  const productId = btn.dataset.id;
+  const name      = btn.dataset.name;
+  btn.disabled = true;
+  try {
+    const res  = await fetch('/api/cart/add', {
+      method: 'POST',
+      headers: {'Content-Type':'application/json'},
+      body: JSON.stringify({product_id: productId, quantity: 1})
+    });
+    const data = await res.json();
+    if (data.login_required) {
+      showToast('Please sign in first');
+      setTimeout(() => window.location.href = '/login', 1000);
+      return;
+    }
+    if (data.success) {
+      cartCount = data.item_count;
+      document.getElementById('cart-count').textContent = cartCount;
+      btn.textContent = '✓ Added';
+      btn.classList.add('added');
+      showToast(`${name} added to cart!`);
+      setTimeout(() => {
+        btn.textContent = '＋ Add';
+        btn.classList.remove('added');
+        btn.disabled = false;
+      }, 1500);
+    } else {
+      showToast(data.error);
+      btn.disabled = false;
+    }
+  } catch(e) {
+    btn.disabled = false;
+  }
+}
+
+function showToast(msg) {
+  const t = document.getElementById('toast');
+  document.getElementById('toast-msg').textContent = msg;
+  t.classList.add('show');
+  setTimeout(() => t.classList.remove('show'), 2800);
+}
+
+// ── Real-time Customer Order Status Notifications ──
+let lastCustNotifCount = 0;
+
+function toggleCustNotifications(event) {
+  event.stopPropagation();
+  const dropdown = document.getElementById('cust-notif-dropdown');
+  dropdown.style.display = dropdown.style.display === 'block' ? 'none' : 'block';
+}
+
+// Close dropdown when clicking outside
+document.addEventListener('click', () => {
+  const dropdown = document.getElementById('cust-notif-dropdown');
+  if (dropdown) dropdown.style.display = 'none';
+});
+
+async function markCustNotifsRead(event) {
+  event.stopPropagation();
+  const res = await fetch('/api/customer/notifications/read', { method: 'POST' });
+  const data = await res.json();
+  if (data.success) {
+    document.getElementById('cust-notif-badge').style.display = 'none';
+    lastCustNotifCount = 0;
+    fetchCustomerNotifications();
+  }
+}
+
+async function fetchCustomerNotifications() {
+  try {
+    const res = await fetch('/api/customer/notifications');
+    if (!res.ok) return;
+    const data = await res.json();
+    
+    // Update badge count
+    const badge = document.getElementById('cust-notif-badge');
+    if (badge && data.unread_count > 0) {
+      badge.textContent = data.unread_count;
+      badge.style.display = 'block';
+      
+      // Proactive push warning (Toast) if unread count increases
+      if (data.unread_count > lastCustNotifCount && typeof showToast === 'function') {
+        const newestNotif = data.notifications[0];
+        showToast(newestNotif.message);
+      }
+    } else if (badge) {
+      badge.style.display = 'none';
+    }
+    lastCustNotifCount = data.unread_count;
+
+    // Render notifications list items
+    const list = document.getElementById('cust-notif-list');
+    if (list && data.notifications.length > 0) {
+      list.innerHTML = '';
+      data.notifications.forEach(n => {
+        const item = document.createElement('div');
+        item.style.padding = '.5rem';
+        item.style.borderRadius = '8px';
+        item.style.border = '1px solid var(--border)';
+        item.style.background = n.read ? 'transparent' : 'rgba(255,107,43,.03)';
+        item.innerHTML = `
+          <div style="font-weight:700; color:var(--dark); line-height:1.3;">${n.message}</div>
+          <div style="font-size:.68rem; color:var(--muted); text-align:right; margin-top:.25rem;">${n.timestamp}</div>
+        `;
+        list.appendChild(item);
+      });
+    } else if (list) {
+      list.innerHTML = '<div style="color:var(--muted);text-align:center;padding:1rem 0;">No active alerts.</div>';
+    }
+  } catch(e) {
+    console.error("Failed to check real-time order status notifications", e);
+  }
+}
+
+// Check for customer notifications immediately and poll every 4 seconds
+if (isLoggedIn) {
+  fetchCustomerNotifications();
+  setInterval(fetchCustomerNotifications, 4000);
+}
+</script>
+</body>
+</html>
