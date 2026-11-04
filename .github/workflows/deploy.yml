@@ -36,14 +36,11 @@ jobs:
 
       - name: Lint Code with Flake8
         run: |
-          # Hard fail on syntax errors / undefined names
           flake8 . --count --select=E9,F63,F7,F82 --show-source --statistics
-          # Style report (advisory). Remove --exit-zero to make it block the build.
           flake8 . --count --exit-zero --max-complexity=10 --max-line-length=127 --statistics
 
       - name: Run Unit Tests with Pytest
         run: |
-          # Failing tests stop the pipeline (no "|| true").
           pytest -v
 
   # ---------------------------------------------------------------
@@ -74,7 +71,7 @@ jobs:
         with:
           images: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}
           tags: |
-            type=sha,format=long
+            type=sha,prefix=sha-,format=long
             type=ref,event=branch
             type=raw,value=latest,enable={{is_default_branch}}
 
@@ -84,27 +81,22 @@ jobs:
           context: ./Online-Convenience-Store-System
           file: ./Online-Convenience-Store-System/Dockerfile
           push: true
-          tags: |
-            ghcr.io/treasure-mei-box/swe40006-group-project:main
-            ghcr.io/treasure-mei-box/swe40006-group-project:latest
+          tags: ${{ steps.meta.outputs.tags }}
           labels: ${{ steps.meta.outputs.labels }}
-          # Lets the running app report which commit it was built from (optional /version route)
           build-args: |
             GIT_SHA=${{ github.sha }}
 
   # ---------------------------------------------------------------
-  # CD (1/2): TEST stage -> Azure app "YLS-production" (used as test for now)
-  # If the smoke test fails, the previous image is redeployed automatically.
+  # CD (1/2): TEST stage -> Azure app "YLS-TEST"
   # ---------------------------------------------------------------
   deploy-to-test:
-    name: "Deploy to Test (Azure App YLS - TESTING)"
+    name: "Deploy to Test (Azure App YLS-TEST)"
     needs: build-and-push-docker
     if: github.ref == 'refs/heads/main'
     runs-on: ubuntu-latest
     environment: TEST
 
     steps:
-      # GHCR image names must be lowercase
       - name: Compute lowercase image name
         run: echo "IMAGE=${{ env.REGISTRY }}/${GITHUB_REPOSITORY,,}" >> "$GITHUB_ENV"
 
@@ -113,7 +105,6 @@ jobs:
         uses: azure/webapps-deploy@v3
         with:
           app-name: 'YLS-TEST'
-          # Must be the publish profile downloaded from the YLS-production app
           publish-profile: ${{ secrets.TESTING }}
           images: ${{ env.IMAGE }}:sha-${{ github.sha }}
 
@@ -135,7 +126,7 @@ jobs:
           echo "### Deployed image (test stage)" >> "$GITHUB_STEP_SUMMARY"
           echo "${{ env.IMAGE }}:sha-${{ github.sha }}" >> "$GITHUB_STEP_SUMMARY"
 
-      # --- Automatic rollback: runs only when the smoke test failed ---
+      # --- Automatic rollback ---
       - name: Roll back to previous image
         id: rollback
         if: ${{ failure() && steps.smoke.outcome == 'failure' && github.event.before != '0000000000000000000000000000000000000000' }}
@@ -143,28 +134,28 @@ jobs:
         with:
           app-name: 'YLS-TEST'
           publish-profile: ${{ secrets.TESTING }}
-          images: ${{ env.IMAGE }}:sha-${{ github.event.before }}
+          images: ${{ env.IMAGE }}:latest
 
       - name: Verify rollback and record it
         if: ${{ always() && steps.rollback.outcome == 'success' }}
         env:
           APP_URL: ${{ steps.deploy.outputs.webapp-url }}
         run: |
+          echo "Waiting 45 seconds for Azure to boot the rolled-back container..."
+          sleep 45
           curl --fail --silent --show-error \
-               --retry 30 --retry-delay 10 --retry-connrefused \
+               --retry 20 --retry-delay 5 --retry-connrefused \
                "$APP_URL/health"
-          echo "::warning::Smoke test failed. Rolled back to previous image sha-${{ github.event.before }}"
+          echo "::warning::Smoke test failed. Rolled back to previous stable image"
           echo "### ROLLED BACK (test stage)" >> "$GITHUB_STEP_SUMMARY"
           echo "Failed commit: ${{ github.sha }}" >> "$GITHUB_STEP_SUMMARY"
-          echo "Restored image: ${{ env.IMAGE }}:sha-${{ github.event.before }}" >> "$GITHUB_STEP_SUMMARY"
+          echo "Restored image: ${{ env.IMAGE }}:latest" >> "$GITHUB_STEP_SUMMARY"
 
   # ---------------------------------------------------------------
-  # CD (2/2): PRODUCTION stage -> Azure app "YLS-testing" (used as production for now)
-  # Only runs if the test stage succeeded. Add "Required reviewers" on the
-  # "production" environment in GitHub for a manual approval gate.
+  # CD (2/2): PRODUCTION stage -> Azure app "YLS-PROD"
   # ---------------------------------------------------------------
   deploy-to-production:
-    name: "Deploy to Production (Azure App YLS - PRODUCTION)"
+    name: "Deploy to Production (Azure App YLS-PROD)"
     needs: deploy-to-test
     if: github.ref == 'refs/heads/main'
     runs-on: ubuntu-latest
@@ -179,7 +170,6 @@ jobs:
         uses: azure/webapps-deploy@v3
         with:
           app-name: 'YLS-PROD'
-          # Must be the publish profile downloaded from the YLS-testing app
           publish-profile: ${{ secrets.PRODUCTION }}
           images: ${{ env.IMAGE }}:sha-${{ github.sha }}
 
@@ -188,9 +178,11 @@ jobs:
         env:
           APP_URL: ${{ steps.deploy.outputs.webapp-url }}
         run: |
+          echo "Waiting 30 seconds for container startup..."
+          sleep 30
           echo "Testing: $APP_URL/health"
           curl --fail --silent --show-error \
-               --retry 30 --retry-delay 10 --retry-connrefused \
+               --retry 15 --retry-delay 5 --retry-connrefused \
                "$APP_URL/health"
 
       - name: Record deployed image
@@ -199,7 +191,7 @@ jobs:
           echo "### Deployed image (production stage)" >> "$GITHUB_STEP_SUMMARY"
           echo "${{ env.IMAGE }}:sha-${{ github.sha }}" >> "$GITHUB_STEP_SUMMARY"
 
-      # --- Automatic rollback: runs only when the smoke test failed ---
+      # --- Automatic rollback ---
       - name: Roll back to previous image
         id: rollback
         if: ${{ failure() && steps.smoke.outcome == 'failure' && github.event.before != '0000000000000000000000000000000000000000' }}
@@ -207,7 +199,7 @@ jobs:
         with:
           app-name: 'YLS-PROD'
           publish-profile: ${{ secrets.PRODUCTION }}
-          images: ${{ env.IMAGE }}:sha-${{ github.event.before }}
+          images: ${{ env.IMAGE }}:latest
 
       - name: Verify rollback and record it
         if: ${{ always() && steps.rollback.outcome == 'success' }}
@@ -219,7 +211,7 @@ jobs:
           curl --fail --silent --show-error \
                --retry 20 --retry-delay 5 --retry-connrefused \
                "$APP_URL/health"
-          echo "::warning::Smoke test failed. Rolled back to previous image sha-${{ github.event.before }}"
-          echo "### ROLLED BACK (test stage)" >> "$GITHUB_STEP_SUMMARY"
+          echo "::warning::Smoke test failed. Rolled back to previous stable image"
+          echo "### ROLLED BACK (production stage)" >> "$GITHUB_STEP_SUMMARY"
           echo "Failed commit: ${{ github.sha }}" >> "$GITHUB_STEP_SUMMARY"
-          echo "Restored image: ${{ env.IMAGE }}:sha-${{ github.event.before }}" >> "$GITHUB_STEP_SUMMARY"
+          echo "Restored image: ${{ env.IMAGE }}:latest" >> "$GITHUB_STEP_SUMMARY"
