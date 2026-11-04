@@ -80,7 +80,8 @@ jobs:
         with:
           context: ./Online-Convenience-Store-System
           file: ./Online-Convenience-Store-System/Dockerfile
-          push: true
+          # Only push from main (pull requests just test the build)
+          push: ${{ github.ref == 'refs/heads/main' }}
           tags: ${{ steps.meta.outputs.tags }}
           labels: ${{ steps.meta.outputs.labels }}
           build-args: |
@@ -112,13 +113,21 @@ jobs:
         id: smoke
         env:
           APP_URL: ${{ steps.deploy.outputs.webapp-url }}
+          EXPECTED_SHA: ${{ github.sha }}
         run: |
-          echo "Waiting 30 seconds for container startup..."
-          sleep 30
-          echo "Testing: $APP_URL/health"
-          curl --fail --silent --show-error \
-               --retry 15 --retry-delay 5 --retry-connrefused \
-               "$APP_URL/health"
+          # Pass only when the NEW build is the one answering (not the old container)
+          for i in $(seq 1 40); do
+            RESP=$(curl -s --max-time 10 "$APP_URL/version" || true)
+            echo "Attempt $i: $RESP"
+            if echo "$RESP" | grep -q "$EXPECTED_SHA"; then
+              curl --fail --silent --show-error "$APP_URL/health"
+              echo "New version $EXPECTED_SHA is live and healthy"
+              exit 0
+            fi
+            sleep 10
+          done
+          echo "New version never became healthy"
+          exit 1
 
       - name: Record deployed image
         if: ${{ success() }}
@@ -126,7 +135,8 @@ jobs:
           echo "### Deployed image (test stage)" >> "$GITHUB_STEP_SUMMARY"
           echo "${{ env.IMAGE }}:sha-${{ github.sha }}" >> "$GITHUB_STEP_SUMMARY"
 
-      # --- Automatic rollback ---
+      # --- Automatic rollback: restore the image of the PREVIOUS commit ---
+      # (not :latest, because every build moves :latest to the newest image)
       - name: Roll back to previous image
         id: rollback
         if: ${{ failure() && steps.smoke.outcome == 'failure' && github.event.before != '0000000000000000000000000000000000000000' }}
@@ -134,7 +144,7 @@ jobs:
         with:
           app-name: 'YLS-TEST'
           publish-profile: ${{ secrets.TESTING }}
-          images: ${{ env.IMAGE }}:latest
+          images: ${{ env.IMAGE }}:sha-${{ github.event.before }}
 
       - name: Verify rollback and record it
         if: ${{ always() && steps.rollback.outcome == 'success' }}
@@ -144,12 +154,13 @@ jobs:
           echo "Waiting 45 seconds for Azure to boot the rolled-back container..."
           sleep 45
           curl --fail --silent --show-error \
-               --retry 20 --retry-delay 5 --retry-connrefused \
+               --retry 20 --retry-delay 10 --retry-connrefused \
                "$APP_URL/health"
-          echo "::warning::Smoke test failed. Rolled back to previous stable image"
+          echo "Version after rollback: $(curl -s --max-time 10 "$APP_URL/version" || true)"
+          echo "::warning::Smoke test failed. Rolled back to previous image sha-${{ github.event.before }}"
           echo "### ROLLED BACK (test stage)" >> "$GITHUB_STEP_SUMMARY"
           echo "Failed commit: ${{ github.sha }}" >> "$GITHUB_STEP_SUMMARY"
-          echo "Restored image: ${{ env.IMAGE }}:latest" >> "$GITHUB_STEP_SUMMARY"
+          echo "Restored image: ${{ env.IMAGE }}:sha-${{ github.event.before }}" >> "$GITHUB_STEP_SUMMARY"
 
   # ---------------------------------------------------------------
   # CD (2/2): PRODUCTION stage -> Azure app "YLS-PROD"
@@ -177,13 +188,21 @@ jobs:
         id: smoke
         env:
           APP_URL: ${{ steps.deploy.outputs.webapp-url }}
+          EXPECTED_SHA: ${{ github.sha }}
         run: |
-          echo "Waiting 30 seconds for container startup..."
-          sleep 30
-          echo "Testing: $APP_URL/health"
-          curl --fail --silent --show-error \
-               --retry 15 --retry-delay 5 --retry-connrefused \
-               "$APP_URL/health"
+          # Pass only when the NEW build is the one answering (not the old container)
+          for i in $(seq 1 40); do
+            RESP=$(curl -s --max-time 10 "$APP_URL/version" || true)
+            echo "Attempt $i: $RESP"
+            if echo "$RESP" | grep -q "$EXPECTED_SHA"; then
+              curl --fail --silent --show-error "$APP_URL/health"
+              echo "New version $EXPECTED_SHA is live and healthy"
+              exit 0
+            fi
+            sleep 10
+          done
+          echo "New version never became healthy"
+          exit 1
 
       - name: Record deployed image
         if: ${{ success() }}
@@ -191,7 +210,7 @@ jobs:
           echo "### Deployed image (production stage)" >> "$GITHUB_STEP_SUMMARY"
           echo "${{ env.IMAGE }}:sha-${{ github.sha }}" >> "$GITHUB_STEP_SUMMARY"
 
-      # --- Automatic rollback ---
+      # --- Automatic rollback: restore the image of the PREVIOUS commit ---
       - name: Roll back to previous image
         id: rollback
         if: ${{ failure() && steps.smoke.outcome == 'failure' && github.event.before != '0000000000000000000000000000000000000000' }}
@@ -199,7 +218,7 @@ jobs:
         with:
           app-name: 'YLS-PROD'
           publish-profile: ${{ secrets.PRODUCTION }}
-          images: ${{ env.IMAGE }}:latest
+          images: ${{ env.IMAGE }}:sha-${{ github.event.before }}
 
       - name: Verify rollback and record it
         if: ${{ always() && steps.rollback.outcome == 'success' }}
@@ -209,9 +228,10 @@ jobs:
           echo "Waiting 45 seconds for Azure to boot the rolled-back container..."
           sleep 45
           curl --fail --silent --show-error \
-               --retry 20 --retry-delay 5 --retry-connrefused \
+               --retry 20 --retry-delay 10 --retry-connrefused \
                "$APP_URL/health"
-          echo "::warning::Smoke test failed. Rolled back to previous stable image"
+          echo "Version after rollback: $(curl -s --max-time 10 "$APP_URL/version" || true)"
+          echo "::warning::Smoke test failed. Rolled back to previous image sha-${{ github.event.before }}"
           echo "### ROLLED BACK (production stage)" >> "$GITHUB_STEP_SUMMARY"
           echo "Failed commit: ${{ github.sha }}" >> "$GITHUB_STEP_SUMMARY"
-          echo "Restored image: ${{ env.IMAGE }}:latest" >> "$GITHUB_STEP_SUMMARY"
+          echo "Restored image: ${{ env.IMAGE }}:sha-${{ github.event.before }}" >> "$GITHUB_STEP_SUMMARY"
