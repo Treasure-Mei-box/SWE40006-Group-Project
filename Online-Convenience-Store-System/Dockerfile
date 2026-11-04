@@ -7,6 +7,8 @@ RUN pip install --no-cache-dir -r requirements.txt
 
 # Copy all application files from the build context
 COPY . .
+ARG GIT_SHA=unknown
+ENV GIT_SHA=$GIT_SHA
 
 EXPOSE 8000
 
