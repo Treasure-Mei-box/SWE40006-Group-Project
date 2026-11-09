@@ -83,7 +83,7 @@ jobs:
           # Only push from main (pull requests just test the build)
           push: ${{ github.ref == 'refs/heads/main' }}
           # tags: …:main and …:latest only - Old version
-          tags: ${{ steps.meta.outputs.tags }} #New version after the rollback error
+          tags: ${{ steps.meta.outputs.tags }} # New version after the rollback error
           labels: ${{ steps.meta.outputs.labels }}
           build-args: |
             GIT_SHA=${{ github.sha }}
@@ -113,7 +113,7 @@ jobs:
       - name: Smoke Test (test stage)
         id: smoke
         env:
-          APP_URL: ${{ steps.deploy.outputs.webapp-url }}
+          APP_URL: ${{ steps.deploy.outputs.webapp-url }} #dynamically fetch URL during deployment from the secret.publish profile saved.
           EXPECTED_SHA: ${{ github.sha }}
         run: |
           # Pass only when the NEW build is the one answering (not the old container)
