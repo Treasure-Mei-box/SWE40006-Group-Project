@@ -82,7 +82,8 @@ jobs:
           file: ./Online-Convenience-Store-System/Dockerfile
           # Only push from main (pull requests just test the build)
           push: ${{ github.ref == 'refs/heads/main' }}
-          tags: ${{ steps.meta.outputs.tags }}
+          # tags: …:main and …:latest only - Old version
+          tags: ${{ steps.meta.outputs.tags }} #New version after the rollback error
           labels: ${{ steps.meta.outputs.labels }}
           build-args: |
             GIT_SHA=${{ github.sha }}
@@ -144,7 +145,8 @@ jobs:
         with:
           app-name: 'YLS-TEST'
           publish-profile: ${{ secrets.TESTING }}
-          images: ${{ env.IMAGE }}:sha-${{ github.event.before }}
+          #images: ${{ env.IMAGE }}:latest --> old version before the rollback error.
+          images: ${{ env.IMAGE }}:sha-${{ github.event.before }} #new version after the roll back error
 
       - name: Verify rollback and record it
         if: ${{ always() && steps.rollback.outcome == 'success' }}
@@ -218,7 +220,8 @@ jobs:
         with:
           app-name: 'YLS-PROD'
           publish-profile: ${{ secrets.PRODUCTION }}
-          images: ${{ env.IMAGE }}:sha-${{ github.event.before }}
+          #images: ${{ env.IMAGE }}:latest --> old version before the rollback error.
+          images: ${{ env.IMAGE }}:sha-${{ github.event.before }}  #new version after the rollback error 
 
       - name: Verify rollback and record it
         if: ${{ always() && steps.rollback.outcome == 'success' }}
