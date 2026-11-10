@@ -15,7 +15,12 @@ from .catalogue import Catalogue
 from .shopping_cart import ShoppingCart, CartItem
 from .order import Order
 from .invoice import Invoice
-from .payment_gateway import PaymentGateway, CreditCardGateway, EWalletGateway
+from .payment_gateway import (
+    PaymentGateway,
+    CreditCardGateway,
+    EWalletGateway,
+    CashOnDeliveryGateway,
+)
 from .payment import Payment
 from .shipment import Shipment
 from .feedback import Feedback
@@ -28,6 +33,6 @@ __all__ = [
     "Product", "Category", "Catalogue",
     "ShoppingCart", "CartItem",
     "Order", "Invoice",
-    "PaymentGateway", "CreditCardGateway", "EWalletGateway",
+    "PaymentGateway", "CreditCardGateway", "EWalletGateway", "CashOnDeliveryGateway",
     "Payment", "Shipment", "Feedback", "SupportTicket",
 ]

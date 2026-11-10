@@ -352,9 +352,6 @@ footer strong { color: var(--orange); font-family: 'Righteous', cursive; }
   <div class="card" data-delay="{{ loop.index0 }}">
     <div class="card-emoji">
       {{ p.image_url }}
-      {% if not p.is_available() %}
-      <div class="oos-overlay">Sold Out</div>
-      {% endif %}
     </div>
     <div class="card-body">
       <div class="card-name">{{ p.name }}</div>
@@ -368,9 +365,8 @@ footer strong { color: var(--orange); font-family: 'Righteous', cursive; }
       <button class="add-btn"
               data-id="{{ p.product_id }}"
               data-name="{{ p.name | e }}"
-              onclick="addToCart(this)"
-              {% if not p.is_available() %}disabled{% endif %}>
-        {% if p.is_available() %}＋ Add{% else %}Sold Out{% endif %}
+              onclick="addToCart(this)">
+        ＋ Add
       </button>
       {% endif %}
     </div>

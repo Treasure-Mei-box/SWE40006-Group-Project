@@ -1,6 +1,5 @@
 """
-PaymentGateway - Strategy Pattern interface.
-CreditCardGateway and EWalletGateway are concrete implementations.
+PaymentGateway - Strategy Pattern interface and concrete payment methods.
 """
 from abc import ABC, abstractmethod
 from typing import Optional
@@ -94,3 +93,24 @@ class EWalletGateway(PaymentGateway):
 
     def __repr__(self):
         return f"<EWalletGateway provider={self.provider} wallet={self.wallet_id}>"
+
+
+class CashOnDeliveryGateway(PaymentGateway):
+
+    def process(self, amount: float, reference: str) -> dict:
+        return {
+            "success": True,
+            "transaction_id": f"COD-{reference}",
+            "gateway": self.gateway_name(),
+            "amount": amount,
+            "reference": reference,
+        }
+
+    def refund(self, transaction_id: str, amount: float) -> bool:
+        return True
+
+    def gateway_name(self) -> str:
+        return "CashOnDelivery"
+
+    def to_dict(self) -> dict:
+        return {"gateway": self.gateway_name()}

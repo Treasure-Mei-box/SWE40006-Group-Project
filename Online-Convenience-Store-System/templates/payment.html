@@ -184,13 +184,16 @@ nav{
     <div class="amount" id="order-total">$0.00</div>
   </div>
 
-  <!-- Gateway selector: CreditCard / EWallet -->
+  <!-- Payment method selector -->
   <div class="gw-tabs">
     <button class="gw-tab active" id="tab-credit" onclick="setGateway('credit')">
       💳 Credit / Debit Card
     </button>
     <button class="gw-tab" id="tab-ewallet" onclick="setGateway('ewallet')">
       📱 E-Wallet
+    </button>
+    <button class="gw-tab" id="tab-cod" onclick="setGateway('cod')">
+      💵 Cash on Delivery
     </button>
   </div>
 
@@ -242,6 +245,10 @@ nav{
     <div style="font-size:.78rem;color:var(--muted);margin-top:-.25rem;line-height:1.5;">
       You will receive a push notification on your e-wallet app to approve this payment.
     </div>
+  </div>
+
+  <div class="panel card" id="panel-cod">
+    <p>Pay cash to the delivery staff when your order arrives. Your invoice will remain unpaid until delivery is confirmed.</p>
   </div>
 
   <!-- Simulate failure toggle (demo purposes) -->
@@ -312,8 +319,10 @@ function setGateway(gw) {
   currentGateway = gw;
   document.getElementById('panel-credit').classList.toggle('active', gw === 'credit');
   document.getElementById('panel-ewallet').classList.toggle('active', gw === 'ewallet');
+  document.getElementById('panel-cod').classList.toggle('active', gw === 'cod');
   document.getElementById('tab-credit').classList.toggle('active', gw === 'credit');
   document.getElementById('tab-ewallet').classList.toggle('active', gw === 'ewallet');
+  document.getElementById('tab-cod').classList.toggle('active', gw === 'cod');
 }
 
 // ── Input formatters ──
@@ -355,7 +364,8 @@ function validateEwallet() {
 // ── Payment submission ──
 async function submitPayment() {
   // Validate form
-  const valid = currentGateway === 'credit' ? validateCredit() : validateEwallet();
+  const valid = currentGateway === 'cod'
+    || (currentGateway === 'credit' ? validateCredit() : validateEwallet());
   if (!valid) return;
 
   const simFail = document.getElementById('sim-fail').checked;
@@ -363,7 +373,10 @@ async function submitPayment() {
   // Show processing overlay with steps (Scenario 1: steps 11-13)
   const overlay = document.getElementById('overlay');
   overlay.classList.add('show');
-  setProcessingMsg('Contacting payment gateway…', 'Authorising transaction with provider');
+  setProcessingMsg(
+    currentGateway === 'cod' ? 'Placing your COD order…' : 'Contacting payment gateway…',
+    currentGateway === 'cod' ? 'Cash is due when your order is delivered' : 'Authorising transaction with provider'
+  );
 
   await sleep(1200);
   setProcessingMsg('Authorising transaction…', 'Please do not close this page');
@@ -373,32 +386,57 @@ async function submitPayment() {
 
   await sleep(900);
 
-  // Call checkout API
+  // Create the order, then process its selected payment method.
   try {
-    const res  = await fetch('/api/cart/checkout', {
+    const checkoutRes = await fetch('/api/cart/checkout', {
       method:  'POST',
       headers: {'Content-Type': 'application/json'},
-      body:    JSON.stringify({
-        gateway:    currentGateway === 'credit' ? 'credit_card' : 'ewallet',
-        simulate_failure: simFail,
-      })
+      body:    JSON.stringify({})
     });
 
     overlay.classList.remove('show');
 
     // Handle redirect to login (HTML response)
-    const ct = res.headers.get('content-type') || '';
+    const ct = checkoutRes.headers.get('content-type') || '';
     if (!ct.includes('application/json')) {
       window.location.href = '/login';
       return;
     }
 
-    const data = await res.json();
+    const checkoutData = await checkoutRes.json();
 
-    if (data.login_required) {
+    if (checkoutData.login_required) {
       window.location.href = '/login';
       return;
     }
+
+    if (!checkoutData.success) {
+      showFailure(checkoutData.error || 'Could not place the order.');
+      return;
+    }
+
+    const paymentPayload = {
+      order_id: checkoutData.order_id,
+      gateway: currentGateway === 'credit'
+        ? 'credit_card'
+        : currentGateway === 'ewallet' ? 'ewallet' : 'cod',
+      simulate_failure: simFail && currentGateway !== 'cod'
+    };
+    if (currentGateway === 'credit') {
+      paymentPayload.card_number = document.getElementById('cc-number').value.trim();
+      paymentPayload.expiry = document.getElementById('cc-expiry').value.trim();
+      paymentPayload.cvv = document.getElementById('cc-cvv').value.trim();
+    } else if (currentGateway === 'ewallet') {
+      paymentPayload.wallet_id = document.getElementById('ew-number').value.trim();
+      paymentPayload.provider = document.getElementById('ew-provider').value;
+    }
+
+    const paymentRes = await fetch('/api/payment/process', {
+      method: 'POST',
+      headers: {'Content-Type': 'application/json'},
+      body: JSON.stringify(paymentPayload)
+    });
+    const data = await paymentRes.json();
 
     if (data.success) {
       showSuccess(data);
@@ -417,16 +455,17 @@ async function submitPayment() {
 // SUCCESS: Scenario 1 steps 14-17
 // → Payment Success → Generate Invoice → Update Status to Paid → Order Confirmed → Notify Shipping
 function showSuccess(data) {
-  const txnId = data.transaction_id || ('TXN-' + Math.random().toString(36).slice(2,10).toUpperCase());
+  const isCod = data.payment_method === 'cod';
   document.getElementById('result-modal').innerHTML = `
     <div class="result-icon">🎉</div>
-    <div class="result-title" style="color:var(--green)">Payment Authorised!</div>
+    <div class="result-title" style="color:var(--green)">${isCod ? 'Order Placed!' : 'Payment Authorised!'}</div>
     <div class="result-sub">
-      Your payment was successfully processed.<br/>
-      <strong>Invoice generated</strong> · Order status updated to <strong>Paid</strong> ✓<br/>
+      ${isCod
+        ? 'Pay cash to the delivery staff when your order arrives.<br/><strong>Invoice generated</strong> · Payment is due on delivery.'
+        : 'Your payment was successfully processed.<br/><strong>Invoice generated</strong> · Payment received ✓'}<br/>
       Your order is now being prepared for shipment. 🚚
     </div>
-    <div class="result-txn">Transaction ID: ${txnId}</div>
+    ${isCod ? '' : `<div class="result-txn">Transaction ID: ${data.transaction_id}</div>`}
     <br/>
     <button class="modal-btn modal-btn-primary" onclick="window.location.href='/orders'">
       📦 View My Orders

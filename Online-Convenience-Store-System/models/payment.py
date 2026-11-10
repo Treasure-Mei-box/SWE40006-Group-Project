@@ -4,6 +4,7 @@ Payment model - associated with an Order, uses a PaymentGateway strategy.
 from __future__ import annotations
 from typing import TYPE_CHECKING, Optional
 from datetime import datetime
+from .payment_gateway import CashOnDeliveryGateway
 
 if TYPE_CHECKING:
     from .order import Order
@@ -33,6 +34,15 @@ class Payment:
             return True
         self.status = "failed"
         return False
+
+    @property
+    def is_cash_on_delivery(self) -> bool:
+        return isinstance(self.gateway, CashOnDeliveryGateway)
+
+    def collect_cash(self) -> bool:
+        if not self.is_cash_on_delivery or self.status != "pending":
+            return False
+        return self.process()
 
     def refund(self) -> bool:
         if self.status == "completed" and self.transaction_id:

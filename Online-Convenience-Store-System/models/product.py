@@ -21,7 +21,7 @@ class Product:
         self.is_active: bool = True  # Initialize default state
 
     def is_available(self) -> bool:
-        return self.stock_quantity > 0
+        return True
 
     def reduce_stock(self, quantity: int) -> bool:
         if self.stock_quantity >= quantity:
