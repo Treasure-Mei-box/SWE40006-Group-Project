@@ -232,6 +232,11 @@ nav{
         {% if order.is_paid() %}
         <span class="paid-badge">✓ Paid</span>
         {% endif %}
+        {% for payment in order.payments %}
+          {% if payment.is_cash_on_delivery and payment.status == 'pending' %}
+          <span class="paid-badge">Cash due on delivery</span>
+          {% endif %}
+        {% endfor %}
         
         <!-- View Invoice Button -->
         {% if order.invoice %}

@@ -163,7 +163,16 @@ body {
       <h3>Payment Details:</h3>
       {% if payment %}
         <p><strong>Method:</strong> 
-          {% if "CreditCard" in payment.gateway.gateway_name() %}
+          {% if payment.is_cash_on_delivery %}
+            Cash on Delivery
+            {% if payment.status == "completed" %}
+              (Paid on delivery)
+            {% elif payment.status == "cancelled" %}
+              (Order cancelled)
+            {% else %}
+              (Payment due on delivery)
+            {% endif %}
+          {% elif "CreditCard" in payment.gateway.gateway_name() %}
             Credit Card ({{ payment.gateway.card_number_masked }})
           {% else %}
             E-Wallet ({{ payment.gateway.provider if payment.gateway.provider else 'TouchNGo' }})
@@ -206,7 +215,15 @@ body {
       <span>{% if order.total_amount >= 25 %}$0.00{% else %}$3.99{% endif %}</span>
     </div>
     <div class="totals-row final">
-      <span>Total Paid</span>
+      <span>
+        {% if payment and payment.is_cash_on_delivery and payment.status == "pending" %}
+          Amount Due on Delivery
+        {% elif not invoice.is_paid %}
+          Invoice Total
+        {% else %}
+          Total Paid
+        {% endif %}
+      </span>
       <span>${{ "%.2f"|format(invoice.amount) }}</span> <!-- Uses the stored grand total -->
     </div>
   </div>

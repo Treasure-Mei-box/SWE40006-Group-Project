@@ -28,6 +28,7 @@ from models import (
     Product,
     CreditCardGateway,
     EWalletGateway,
+    CashOnDeliveryGateway,
     Payment,
     Shipment,
     Order,
@@ -397,7 +398,9 @@ def load_state_from_db() -> bool:
 
         for p_dict in o_dict.get("payments", []):
             gw_name = p_dict["gateway"]
-            if "CreditCard" in gw_name:
+            if gw_name == "CashOnDelivery":
+                gw = CashOnDeliveryGateway()
+            elif "CreditCard" in gw_name:
                 gw = CreditCardGateway(p_dict.get("card_masked", "****"), "00/00")
             else:
                 gw = EWalletGateway("wallet", p_dict.get("provider", "TouchNGo"))
@@ -1003,7 +1006,7 @@ def api_cart_add():
     cart = customer.get_or_create_cart()
     ok = cart.add_product(p, quantity, catalogue=catalogue)
     if not ok:
-        return jsonify({"success": False, "error": "Product is out of stock"}), 409
+        return jsonify({"success": False, "error": "Product is not in the catalogue"}), 409
     return jsonify(
         {"success": True, "item_count": cart.item_count(), "total": cart.total()}
     )
@@ -1043,10 +1046,10 @@ def api_cart_update():
             jsonify(
                 {
                     "success": False,
-                    "error": "Requested quantity exceeds available stock",
+                    "error": "Product is not in your cart",
                 }
             ),
-            409,
+            404,
         )
 
     return jsonify(
@@ -1099,9 +1102,9 @@ def api_checkout():
     if not order:
         return (
             jsonify(
-                {"success": False, "error": "Insufficient stock for one or more items"}
+                {"success": False, "error": "Cart is empty. Add items before checking out."}
             ),
-            409,
+            400,
         )
 
     customer.orders.append(order)
@@ -1527,7 +1530,7 @@ def api_payment_process():
 
     data = request.get_json(force=True) or {}
     order_id = data.get("order_id", "").strip()
-    gw_type = data.get("gateway", "credit_card")
+    gw_type = str(data.get("gateway", "credit_card")).strip().lower()
     sim_fail = data.get("simulate_failure", False)
 
     if not order_id:
@@ -1543,6 +1546,29 @@ def api_payment_process():
     # Calculate actual grand total including shipping for the gateway Payment log
     shipping = 0 if order.total_amount >= 25 else 3.99
     grand_total = round(order.total_amount + shipping, 2)
+
+    if gw_type in {"cod", "cash_on_delivery"}:
+        gateway = CashOnDeliveryGateway()
+        payment = Payment(str(uuid.uuid4()), order, grand_total, gateway)
+        order.add_payment(payment)
+
+        # COD is accepted as an order now; cash is collected and marked paid on delivery.
+        order.customer.get_or_create_cart().confirm_order()
+        order.update_status("pending")
+        return jsonify(
+            {
+                "success": True,
+                "payment_status": "pending",
+                "payment_method": "cod",
+                "order_id": order.order_id,
+                "total": grand_total,
+                "invoice_id": order.invoice.invoice_id if order.invoice else None,
+                "message": "Order placed. Cash is due when your order is delivered.",
+            }
+        )
+
+    if gw_type not in {"credit_card", "ewallet"}:
+        return jsonify({"success": False, "error": "Unsupported payment method"}), 400
 
     # Select PaymentGateway strategy at runtime (Strategy Pattern)
     if gw_type == "ewallet":
@@ -1588,6 +1614,7 @@ def api_payment_process():
                 "total": order.total_amount,
                 "transaction_id": payment.transaction_id,
                 "gateway": gateway.gateway_name(),
+                "payment_method": gw_type,
                 "invoice_id": order.invoice.invoice_id if order.invoice else None,
                 "message": "Payment authorised! Your order is being processed.",
             }
@@ -1622,8 +1649,15 @@ def invoice_page(invoice_id):
     if order.customer.account_id != customer.account_id:
         abort(403)
 
-    # Find the completed payment for this order (Strategy Pattern)
-    payment = next((p for p in order.payments if p.status == "completed"), None)
+    # Show completed payments and pending COD payments on the invoice.
+    payment = next(
+        (
+            p
+            for p in order.payments
+            if p.status == "completed" or p.is_cash_on_delivery
+        ),
+        None,
+    )
 
     return render_template(
         "invoice.html", order=order, invoice=order.invoice, payment=payment
@@ -1882,6 +1916,20 @@ def api_admin_deliver_order():
         order.shipments[0].mark_delivered()
     else:
         order.update_status("delivered")
+
+    for payment in order.payments:
+        if payment.is_cash_on_delivery and payment.status == "pending":
+            if not payment.collect_cash():
+                return (
+                    jsonify(
+                        {
+                            "success": False,
+                            "error": "Delivery was recorded, but COD collection could not be completed.",
+                        }
+                    ),
+                    500,
+                )
+
     # Trigger Customer Notification
     order.customer.add_notification(
         f"Your order #{order.order_id[:8].upper()} has been delivered successfully! Please leave a review. ⭐",
@@ -1919,14 +1967,14 @@ def api_admin_cancel_order():
             400,
         )
 
-    # Standard operational flow: Restores inventory stock level for each purchased item
-    for item in order.items:
-        item.product.restock(item.quantity)
-
     order.update_status("cancelled")
+    for payment in order.payments:
+        if payment.is_cash_on_delivery and payment.status == "pending":
+            payment.status = "cancelled"
+
     # Trigger Customer Notification
     order.customer.add_notification(
-        f"Your order #{order.order_id[:8].upper()} was cancelled and stock has been returned to inventory.",
+        f"Your order #{order.order_id[:8].upper()} was cancelled.",
         order.order_id,
     )
     return jsonify({"success": True, "status": order.status})
@@ -1966,16 +2014,10 @@ def api_admin_refund_order():
             400,
         )
 
-    # If transitioning directly to refunded (e.g., from delivered, bypassing the cancel step)
-    # we return stock to inventory. If transitioning from cancelled, stock was already returned.
-    if order.status != "cancelled":
-        for item in order.items:
-            item.product.restock(item.quantity)
-
     order.update_status("refunded")
     # Trigger Customer Notification
     order.customer.add_notification(
-        f"Your order #{order.order_id[:8].upper()} has been refunded and stock returned to inventory. 💰",
+        f"Your order #{order.order_id[:8].upper()} has been refunded. 💰",
         order.order_id,
     )
     return jsonify({"success": True, "status": order.status})

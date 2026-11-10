@@ -271,7 +271,7 @@ nav{
   {% if cart.items %}
   <div id="cart-items">
     {% for item in cart.items.values() %}
-    <div class="cart-item" id="item-{{ item.product.product_id }}" data-price="{{ item.product.price }}" data-stock="{{ item.product.stock_quantity }}">
+    <div class="cart-item" id="item-{{ item.product.product_id }}" data-price="{{ item.product.price }}">
       <div class="item-emoji">{{ item.product.image_url }}</div>
       <div class="item-info">
         <div class="item-name">{{ item.product.name }}</div>
@@ -279,9 +279,8 @@ nav{
       </div>
       <div class="qty-controls">
         <button class="qty-btn dec" data-id="{{ item.product.product_id }}" onclick="updateQty(this, -1)">−</button>
-        <!-- Styled input element supporting manual entry and auto-capping -->
         <input type="number" class="qty-num-input" id="qty-{{ item.product.product_id }}" 
-               value="{{ item.quantity }}" min="1" max="{{ item.product.stock_quantity }}"
+               value="{{ item.quantity }}" min="1"
                onchange="manualUpdateQty('{{ item.product.product_id }}', this.value)"
                oninput="this.value=this.value.replace(/\D/g,'')"/>
         <button class="qty-btn inc" data-id="{{ item.product.product_id }}" onclick="updateQty(this, 1)">+</button>
@@ -383,6 +382,7 @@ nav{
     <div class="pay-tabs" id="pay-tabs">
       <button class="pay-tab active" id="tab-cc"  onclick="setPayTab('cc')">Credit Card</button>
       <button class="pay-tab"        id="tab-ew"  onclick="setPayTab('ew')">E-Wallet</button>
+      <button class="pay-tab"        id="tab-cod" onclick="setPayTab('cod')">Cash on Delivery</button>
     </div>
 
     <!-- Credit Card panel -->
@@ -430,6 +430,10 @@ nav{
       </div>
     </div>
 
+    <div class="pay-panel" id="panel-cod">
+      <p>Pay cash to the delivery staff when your order arrives. The invoice will remain unpaid until delivery is confirmed.</p>
+    </div>
+
     <!-- Processing / declined state (hidden by default) -->
     <div id="pay-declined" style="display:none;">
       <div class="declined-box">
@@ -460,18 +464,11 @@ async function updateQty(btn, delta) {
   const pid      = btn.dataset.id;
   const card     = document.getElementById('item-' + pid);
   const price    = parseFloat(card.dataset.price);
-  const maxStock = parseInt(card.dataset.stock);
   const qtyInput = document.getElementById('qty-' + pid); // Now reads input field
   const subSpan  = document.getElementById('sub-' + pid);
   const newQty   = parseInt(qtyInput.value) + delta;
   
   if (newQty < 1) { removeItem({dataset:{id:pid}}); return; }
-  
-  // Client-side stock ceiling validation
-  if (newQty > maxStock) {
-    alert(`Only ${maxStock} units of this snack are available in our inventory!`);
-    return;
-  }
   
   const res  = await fetch('/api/cart/update', {
     method:'POST', headers:{'Content-Type':'application/json'},
@@ -491,7 +488,6 @@ async function updateQty(btn, delta) {
 async function manualUpdateQty(pid, val) {
   const card     = document.getElementById('item-' + pid);
   const price    = parseFloat(card.dataset.price);
-  const maxStock = parseInt(card.dataset.stock);
   const qtyInput = document.getElementById('qty-' + pid);
   const subSpan  = document.getElementById('sub-' + pid);
   
@@ -500,12 +496,6 @@ async function manualUpdateQty(pid, val) {
   // Fallback to 1 if input is empty, invalid, or negative
   if (isNaN(newQty) || newQty < 1) {
     newQty = 1;
-  }
-  
-  // Stock validation and automatic capping
-  if (newQty > maxStock) {
-    alert(`Only ${maxStock} units of this snack are available in our inventory! Capping at ${maxStock}.`);
-    newQty = maxStock;
   }
   
   // Enforce the validated value on the input field instantly
@@ -675,19 +665,25 @@ function setPayTab(tab) {
   currentPayTab = tab;
   document.getElementById('panel-cc').classList.toggle('active', tab === 'cc');
   document.getElementById('panel-ew').classList.toggle('active', tab === 'ew');
+  document.getElementById('panel-cod').classList.toggle('active', tab === 'cod');
   document.getElementById('tab-cc').classList.toggle('active', tab === 'cc');
   document.getElementById('tab-ew').classList.toggle('active', tab === 'ew');
+  document.getElementById('tab-cod').classList.toggle('active', tab === 'cod');
+  document.getElementById('pay-submit-btn').textContent =
+    tab === 'cod' ? 'Place Order' : 'Pay Now';
   clearPayErrors();
 }
 
 function resetPayModal() {
+  setPayTab('cc');
   document.getElementById('pay-declined').style.display  = 'none';
   document.getElementById('pay-form-actions').style.display = '';
   document.getElementById('panel-cc').style.display = '';
   document.getElementById('panel-ew').style.display = '';
+  document.getElementById('panel-cod').style.display = '';
   document.getElementById('pay-tabs').style.display = '';
   const btn = document.getElementById('pay-submit-btn');
-  btn.disabled = false; btn.innerHTML = 'Pay Now';
+  btn.disabled = false; btn.textContent = 'Pay Now';
   clearPayErrors();
 }
 
@@ -721,7 +717,7 @@ async function submitPayment() {
     if (!num) { document.getElementById('err-cc-num').style.display='block'; valid=false; }
     if (!exp) { document.getElementById('err-cc-exp').style.display='block'; valid=false; }
     if (!cvv || !/^\d{3,4}$/.test(cvv)) { document.getElementById('err-cc-cvv').style.display='block'; valid=false; }
-  } else {
+  } else if (currentPayTab === 'ew') {
     const wid = document.getElementById('ew-id').value.trim();
     if (!wid) { document.getElementById('err-ew-id').style.display='block'; valid=false; }
   }
@@ -730,12 +726,15 @@ async function submitPayment() {
   btn.disabled = true;
   btn.innerHTML = '<span class="spinner"></span> Processing…';
 
-  let payload = { order_id: currentOrderId, gateway: currentPayTab === 'cc' ? 'credit_card' : 'ewallet' };
+  let payload = {
+    order_id: currentOrderId,
+    gateway: currentPayTab === 'cc' ? 'credit_card' : currentPayTab === 'ew' ? 'ewallet' : 'cod'
+  };
   if (currentPayTab === 'cc') {
     payload.card_number = document.getElementById('cc-num').value.trim();
     payload.expiry      = document.getElementById('cc-exp').value.trim();
     payload.cvv         = document.getElementById('cc-cvv').value.trim();
-  } else {
+  } else if (currentPayTab === 'ew') {
     payload.wallet_id = document.getElementById('ew-id').value.trim();
     payload.provider  = document.getElementById('ew-provider').value;
   }
@@ -749,15 +748,18 @@ async function submitPayment() {
 
     if (data.success) {
       document.getElementById('modal-payment').classList.remove('show');
+      document.getElementById('success-msg').textContent =
+        data.message || 'Your snacks are being packed and will be on their way soon!';
       document.getElementById('success-details').innerHTML =
         'Invoice: <code>' + (data.invoice_id||'').substring(0,8).toUpperCase() + '</code>' +
-        '&nbsp;&nbsp;Tracking: <code>' + (data.tracking||'N/A') + '</code>';
+        (data.payment_method === 'cod' ? '&nbsp;&nbsp;Payment due on delivery' : '');
       document.getElementById('modal-success').classList.add('show');
     } else {
       document.getElementById('pay-declined').style.display = 'block';
       document.getElementById('pay-form-actions').style.display = 'none';
       document.getElementById('panel-cc').style.display = 'none';
       document.getElementById('panel-ew').style.display = 'none';
+      document.getElementById('panel-cod').style.display = 'none';
       document.getElementById('pay-tabs').style.display = 'none';
       document.getElementById('decline-msg').textContent =
         data.error || 'Payment declined. Please try a different method.';

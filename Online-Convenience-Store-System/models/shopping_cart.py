@@ -40,21 +40,12 @@ class ShoppingCart:
 
     def add_product(self, product: Product, quantity: int = 1,
                     catalogue: Optional[Catalogue] = None) -> bool:
-        """
-        Add a product to the cart.
-        Optionally accepts a Catalogue reference to verify system-wide
-        availability (UML: ShoppingCart ..> Catalogue : queries stock).
-        Falls back to direct product.is_available() check.
-        """
-        # Delegate to Catalogue if provided (Information Expert for inventory)
+        
         if catalogue is not None:
             all_products = catalogue.all_products()
             live_product = next((p for p in all_products
                                  if p.product_id == product.product_id), None)
-            if live_product is None or not live_product.is_available():
-                return False
-        else:
-            if not product.is_available():
+            if live_product is None:
                 return False
 
         if product.product_id in self.items:
@@ -74,10 +65,6 @@ class ShoppingCart:
             if quantity <= 0:
                 return self.remove_product(product_id)
             
-            # Stock Validation: block update if quantity exceeds available inventory
-            if quantity > self.items[product_id].product.stock_quantity:
-                return False
-                
             self.items[product_id].quantity = quantity
             return True
         return False
@@ -105,11 +92,6 @@ class ShoppingCart:
         if not self.items:
             return None
 
-        # Validate sufficient stock for every item before creating the Order
-        for item in self.items.values():
-            if item.product.stock_quantity < item.quantity:
-                return None  # Abort — insufficient stock
-
         from .order import Order
         import uuid
 
@@ -125,12 +107,10 @@ class ShoppingCart:
 
     def confirm_order(self) -> None:
         """
-        Called after payment succeeds (A2 Scenario 1 Step 16).
-        Reduces stock for each product and clears the cart.
+        Called after order confirmation. Inventory is not tracked, so this
+        clears the cart without reducing product quantities.
         CRC 4.9: 'Clear all items after successful order placement'
         """
-        for item in self.items.values():
-            item.product.reduce_stock(item.quantity)
         self.clear()
 
     def to_dict(self) -> dict:
