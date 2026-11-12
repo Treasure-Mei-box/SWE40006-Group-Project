@@ -39,9 +39,10 @@ jobs:
           flake8 . --count --select=E9,F63,F7,F82 --show-source --statistics
           flake8 . --count --exit-zero --max-complexity=10 --max-line-length=127 --statistics
 
-      - name: Run Unit Tests with Pytest
+      - name: Run Unit Tests with Pytest and Coverage
+        working-directory: ./Online-Convenience-Store-System
         run: |
-          pytest -v
+          pytest -v --cov=app --cov=models --cov-report=term-missing --cov-fail-under=80
 
   # ---------------------------------------------------------------
   # Build: package the app as a Docker image and push to GHCR

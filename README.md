@@ -27,7 +27,7 @@ A Python web app for an online convenience store, with a full **CI/CD pipeline**
 | Stage | What happens | Where |
 | --- | --- | --- |
 | **Code** | Push code to `main` | GitHub |
-| **Check** | Lint with Flake8, test with pytest | GitHub Actions |
+| **Check** | Lint with Flake8, run pytest, and report code coverage | GitHub Actions |
 | **Pack** | Build a Docker image | GitHub Actions |
 | **Store** | Save the image, tagged with its commit ID | GitHub Container Registry (GHCR) |
 | **Test** | Deploy, check the version, roll back if broken | Azure `YLS-TEST` |
@@ -76,8 +76,10 @@ Run the checks the pipeline runs:
 
 ```bash
 flake8 . --count --select=E9,F63,F7,F82 --show-source --statistics
-pytest -v
+pytest -v --cov=app --cov=models --cov-report=term-missing
 ```
+
+The coverage command measures `app.py` and the modules in `models/`. It displays the coverage for each file and the lines not covered by tests.
 
 ---
 
@@ -123,7 +125,7 @@ File: [`.github/workflows/deploy.yml`](.github/workflows/deploy.yml)
 
 - Installs dependencies on Python 3.10.
 - **Flake8** fails the build on serious errors (syntax errors, undefined names) and reports style issues without failing.
-- **pytest** runs the unit tests. A failed test, or no tests found, stops the pipeline.
+- **pytest-cov** runs the unit tests and reports coverage for `app.py` and `models/`. A failed test or no tests found stops the pipeline.
 
 ### Job 2 – Container Packaging & Push
 
